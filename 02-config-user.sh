@@ -80,6 +80,12 @@ bindsym \$mod+Shift+e exec swaynag -t warning -m 'Salir?' -b 'Sí' 'swaymsg exit
 bindsym \$mod+Shift+c reload
 bindsym \$mod+r mode "resize"
 
+# Calculadora en modo flotante
+bindsym XF86Calculator exec galculator
+for_window [app_id="galculator"] floating enable
+for_window [app_id="galculator"] resize set 350 500
+for_window [app_id="galculator"] move position center
+
 # Navegación
 bindsym \$mod+Left focus left
 bindsym \$mod+Right focus right
