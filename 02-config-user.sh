@@ -109,21 +109,58 @@ bindsym XF86MonBrightnessUp exec brightnessctl --device='intel_backlight' set +5
 bindsym XF86MonBrightnessDown exec brightnessctl --device='intel_backlight' set 5%- -n 2400
 EOF
 
-# 4. Waybar Config (V8 JSON + CSS Mejorado)
+# --- NUEVO: Script de Gestión de Energía (Optimizado con Señales) ---
+mkdir -p "$USER_HOME/.config/waybar/scripts"
+cat <<EOF > "$USER_HOME/.config/waybar/scripts/power-profiles.sh"
+#!/bin/bash
+current=\$(powerprofilesctl get)
+if [ "\$1" == "toggle" ]; then
+    case \$current in
+        performance) powerprofilesctl set balanced ;;
+        balanced) powerprofilesctl set power-saver ;;
+        power-saver) powerprofilesctl set performance ;;
+    esac
+    pkill -SIGRTMIN+8 waybar
+    exit 0
+fi
+case \$current in
+    performance) echo '{"text": "Perf", "alt": "performance", "class": "performance", "percentage": 100 }' ;;
+    balanced) echo '{"text": "Bal", "alt": "balanced", "class": "balanced", "percentage": 50 }' ;;
+    power-saver) echo '{"text": "Sav", "alt": "power-saver", "class": "power-saver", "percentage": 20 }' ;;
+esac
+EOF
+chmod +x "$USER_HOME/.config/waybar/scripts/power-profiles.sh"
+
+# 4. Waybar Config (V10 Final: Batería + Energía + Signal 8)
 cat <<EOF > "$USER_HOME/.config/waybar/config"
 {
     "layer": "top",
     "height": 34,
     "modules-left": ["sway/workspaces", "sway/mode"],
     "modules-center": ["clock"],
-    "modules-right": ["pulseaudio", "network", "cpu", "memory", "battery", "tray"],
+    "modules-right": ["pulseaudio", "network", "cpu", "memory", "custom/power", "battery", "tray"],
     "sway/workspaces": { "disable-scroll": true, "format": "{name}" },
     "clock": { "format": " {:%H:%M   %d/%m}", "tooltip-format": "<big>{:%Y %B}</big>\n<tt>{calendar}</tt>" },
     "cpu": { "format": " {usage}%" },
     "memory": { "format": " {}%" },
     "network": { "format-wifi": "", "format-ethernet": "", "format-disconnected": "⚠", "tooltip-format": "{essid} ({signalStrength}%)" },
     "pulseaudio": { "format": "{icon} {volume}%", "format-muted": "🔇 {volume}%", "format-icons": { "default": ["", "", ""] }, "on-click": "pavucontrol" },
-    "battery": { "interval": 60, "states": { "warning": 30, "critical": 15 }, "format": "{capacity}% {icon}", "format-icons": ["", "", "", "", ""] }
+    "battery": { 
+        "interval": 60, 
+        "states": { "warning": 30, "critical": 15 }, 
+        "format": "{capacity}% {icon}", 
+        "format-icons": ["", "", "", "", ""] 
+    },
+    "custom/power": {
+        "format": "{icon}",
+        "format-icons": { "performance": "", "balanced": "", "power-saver": "" },
+        "return-type": "json",
+        "exec": "~/.config/waybar/scripts/power-profiles.sh",
+        "on-click": "~/.config/waybar/scripts/power-profiles.sh toggle",
+        "interval": 30,
+        "signal": 8,
+        "tooltip": true
+    }
 }
 EOF
 
@@ -138,6 +175,12 @@ window#waybar { background-color: rgba(26, 26, 26, 0.95); color: #ffffff; border
 #battery.warning { color: #ffeb3b; }
 #battery.critical { color: #ff5555; animation-name: blink; animation-duration: 0.5s; }
 @keyframes blink { to { color: #ffffff; } }
+
+/* GESTOR DE ENERGÍA */
+#custom-power { padding: 0 10px; margin: 0 4px; background-color: rgba(255, 255, 255, 0.05); border-radius: 4px; }
+#custom-power.performance { color: #ff5555; }
+#custom-power.balanced { color: #00BCD4; }
+#custom-power.power-saver { color: #26A65B; }
 EOF
 
 # 5. Kitty Config (V8)
