@@ -32,7 +32,10 @@ apt -y install curl build-essential pkg-config libglib2.0-bin xdg-user-dirs unzi
     firmware-sof-signed \
     intel-microcode \
     mesa-utils \
-    rfkill
+    rfkill \
+    intel-media-va-driver-non-free \
+    intel-gpu-tools \
+    vainfo
 
 # 3. Stack Sway Completo (Lista V8 Original)
 echo "--- 🖼️ Instalando Stack Sway V8 Completo ---"
