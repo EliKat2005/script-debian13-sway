@@ -102,9 +102,11 @@ bindsym XF86AudioMute exec pamixer -t
 bindsym XF86AudioMicMute exec pamixer --default-source -t
 bindsym XF86AudioPlay exec playerctl play-pause
 
-# BRILLO INTELIGENTE (Fix AWK: La solución que funcionó)
-bindsym XF86MonBrightnessUp exec brightnessctl set +5%
-bindsym XF86MonBrightnessDown exec sh -c "brightnessctl get | awk '{if (\$1 > 12) system(\"brightnessctl set 5%-\")}'"
+# Subir brillo (5%)
+bindsym XF86MonBrightnessUp exec brightnessctl --device='intel_backlight' set +5%
+
+# Bajar brillo (Protección: Mínimo 2400/2% para evitar pantalla negra)
+bindsym XF86MonBrightnessDown exec brightnessctl --device='intel_backlight' set 5%- -n 2400
 EOF
 
 # 4. Waybar Config (V8 JSON + CSS Mejorado)
