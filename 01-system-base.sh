@@ -45,14 +45,14 @@ apt -y install curl build-essential pkg-config libglib2.0-bin xdg-user-dirs unzi
 echo "--- 🖼️ Instalando Stack Sway V8 Completo ---"
 PKGS_SWAY=(
   sway swaybg swayidle swaylock
-  xwayland x11-xserver-utils
+  xwayland
   waybar wofi mako-notifier
   grim slurp swappy wl-clipboard wdisplays
   xdg-desktop-portal-wlr xdg-desktop-portal-gtk
   greetd tuigreet lxpolkit
   kitty thunar thunar-archive-plugin thunar-volman gvfs-backends
   xarchiver zip p7zip-full unrar-free
-  chromium micro ranger mpv zathura viewnior gparted
+  chromium micro ranger mpv zathura viewnior gnome-disk-utility
   brightnessctl pamixer playerctl galculator
   btop nm-connection-editor blueman network-manager-gnome
   pipewire pipewire-pulse wireplumber pavucontrol libspa-0.2-bluetooth
@@ -118,23 +118,6 @@ make install
 cd /
 rm -rf /tmp/grub-btrfs
 systemctl enable grub-btrfsd
-
-# --- FASE 4: CONFIGURACIONES EXTRA ---
-
-echo "--- 🔧 Creando Wrapper Seguro para GParted ---"
-cat <<'EOF' > /usr/local/bin/gparted-wayland
-#!/bin/bash
-# Wrapper V10 para GParted en Sway
-if [ -z "$DISPLAY" ]; then export DISPLAY=:0; fi
-xhost +SI:localuser:root
-sudo -E /usr/sbin/gparted "$@"
-xhost -SI:localuser:root
-EOF
-
-chmod +x /usr/local/bin/gparted-wayland
-
-# Creamos el alias global para que 'gparted' use el wrapper
-echo "alias gparted='gparted-wayland'" >> /etc/bash.bashrc
 
 apt autoremove -y
 apt clean
