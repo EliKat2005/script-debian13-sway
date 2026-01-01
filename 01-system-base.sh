@@ -45,6 +45,7 @@ apt -y install curl build-essential pkg-config libglib2.0-bin xdg-user-dirs unzi
 echo "--- 🖼️ Instalando Stack Sway V8 Completo ---"
 PKGS_SWAY=(
   sway swaybg swayidle swaylock
+  xwayland x11-xserver-utils
   waybar wofi mako-notifier
   grim slurp swappy wl-clipboard wdisplays
   xdg-desktop-portal-wlr xdg-desktop-portal-gtk
