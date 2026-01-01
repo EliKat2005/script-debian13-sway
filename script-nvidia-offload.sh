@@ -62,18 +62,13 @@ apt -y install \
 
 # --- FASE 2: CONFIGURACIÓN KERNEL ---
 
-log "3. Configurando Kernel para Wayland (Modeset + FBDev)"
-CHANGED=0
-if ! grep -q "nvidia-drm.modeset=1" /etc/default/grub; then
-    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 nvidia-drm.modeset=1 nvidia-drm.fbdev=1"/' /etc/default/grub
-    CHANGED=1
-fi
-
-if [[ $CHANGED -eq 1 ]]; then
+log "3. Configurando GRUB (Modeset + Silenciador de Logs + BIOS Fix)"
+if ! grep -q "pci=noaer" /etc/default/grub; then
+    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 nvidia-drm.modeset=1 nvidia-drm.fbdev=1 pci=noaer loglevel=3"/' /etc/default/grub
     update-grub
-    log "✅ GRUB actualizado con parámetros Nvidia."
+    log "✅ GRUB Actualizado y Silenciado."
 else
-    log "✅ GRUB ya tenía los parámetros configurados."
+    log "✅ GRUB ya estaba optimizado."
 fi
 
 # --- FASE 3: UTILIDADES ---
