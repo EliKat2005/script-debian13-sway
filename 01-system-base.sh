@@ -48,7 +48,7 @@ PKGS_SWAY=(
   kitty thunar thunar-archive-plugin thunar-volman gvfs-backends
   xarchiver zip p7zip-full unrar-free
   chromium micro ranger mpv zathura viewnior
-  brightnessctl pamixer playerctl
+  brightnessctl pamixer playerctl galculator
   btop nm-connection-editor blueman network-manager-gnome
   pipewire pipewire-pulse wireplumber pavucontrol libspa-0.2-bluetooth
   fonts-inter fonts-jetbrains-mono fonts-font-awesome fonts-noto-color-emoji
