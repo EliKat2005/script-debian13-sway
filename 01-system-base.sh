@@ -58,7 +58,7 @@ PKGS_SWAY=(
   pipewire pipewire-pulse wireplumber pavucontrol libspa-0.2-bluetooth
   fonts-inter fonts-jetbrains-mono fonts-font-awesome fonts-noto-color-emoji
   papirus-icon-theme arc-theme desktop-base dmz-cursor-theme
-  qt5ct qt6ct qtwayland5 openssh-server power-profiles-daemon fwupd thermald.service
+  qt5ct qt6ct qtwayland5 openssh-server power-profiles-daemon fwupd thermald
 )
 apt -y --no-install-recommends install "${PKGS_SWAY[@]}"
 
@@ -111,7 +111,7 @@ systemctl disable getty@tty1 2>/dev/null || true
 systemctl mask getty@tty1 2>/dev/null || true
 
 # --- INSTALACIÓN MANUAL: GRUB-BTRFS (No disponible en repos Trixie) ---
-log "Instalando Grub-BTRFS desde GitHub..."
+echo "Instalando Grub-BTRFS desde GitHub..."
 git clone https://github.com/Antynea/grub-btrfs.git /tmp/grub-btrfs
 cd /tmp/grub-btrfs
 make install
