@@ -35,7 +35,11 @@ apt -y install curl build-essential pkg-config libglib2.0-bin xdg-user-dirs unzi
     rfkill \
     intel-media-va-driver-non-free \
     intel-gpu-tools \
-    vainfo
+    vainfo \
+    snapper \
+    inotify-tools \
+    git \
+    make
 
 # 3. Stack Sway Completo (Lista V8 Original)
 echo "--- 🖼️ Instalando Stack Sway V8 Completo ---"
@@ -104,6 +108,15 @@ systemctl enable fstrim.timer
 # Fix TTY conflicto
 systemctl disable getty@tty1 2>/dev/null || true
 systemctl mask getty@tty1 2>/dev/null || true
+
+# --- INSTALACIÓN MANUAL: GRUB-BTRFS (No disponible en repos Trixie) ---
+log "Instalando Grub-BTRFS desde GitHub..."
+git clone https://github.com/Antynea/grub-btrfs.git /tmp/grub-btrfs
+cd /tmp/grub-btrfs
+make install
+cd /
+rm -rf /tmp/grub-btrfs
+systemctl enable grub-btrfsd
 
 apt autoremove -y
 apt clean
