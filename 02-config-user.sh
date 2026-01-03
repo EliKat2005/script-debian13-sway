@@ -25,18 +25,20 @@ EOF
 
 # 3. Sway Config (V8 + Fixes Brillo/Waybar)
 cat <<EOF > "$USER_HOME/.config/sway/config"
-# --- SWAY CONFIG V10 ---
-set \$mod Mod4
-set \$term kitty
-set \$menu wofi --show drun --allow-images
+# --- 1. VARIABLES ---
+set $mod Mod4
+set $term kitty
 
+# --no-custom evita problemas de foco en wofi
+set $menu wofi --show drun --allow-images --no-custom
 font pango:Inter 11
 
-# Variables para Nvidia/Portales
-exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP=sway
+# --- 2. ENTORNO Y PORTALES ---
+# Necesario para compartir pantalla (OBS/Discord) y temas
+exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
 exec systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
 
-# Fix: Teclado Latam + Numpad
+# --- 3. INPUT (TECLADO/MOUSE) ---
 input * {
     xkb_layout latam
     xkb_numlock enabled
@@ -46,73 +48,149 @@ input * {
     middle_emulation enabled
 }
 
+# --- 4. OUTPUT (FONDO) ---
 output * bg /usr/share/images/desktop-base/default fill
 
+# --- 5. APARIENCIA ---
 default_border pixel 2
 gaps inner 6
 gaps outer 0
-client.focused #00BCD4 #263238 #FFFFFF #00BCD4 #00BCD4
 
-# INICIO AUTOMÁTICO (Waybar con delay de seguridad)
-exec_always sh -c "pkill waybar; sleep 1; waybar"
+# Colores del borde y ventanas
+# Class                 Border  Bground Text    Indicator ChildBorder
+client.focused          #00BCD4 #263238 #FFFFFF #00BCD4   #00BCD4
+client.focused_inactive #333333 #5f676a #ffffff #484e50   #5f676a
+client.unfocused        #333333 #222222 #888888 #292d2e   #222222
+client.urgent           #2f343a #900000 #ffffff #900000   #900000
+
+# Forzar tema oscuro en aplicaciones GTK
+set $gnome-schema org.gnome.desktop.interface
+exec_always {
+    gsettings set $gnome-schema gtk-theme 'Arc-Dark'
+    gsettings set $gnome-schema icon-theme 'Papirus-Dark'
+    gsettings set $gnome-schema cursor-theme 'DMZ-White'
+    gsettings set $gnome-schema color-scheme 'prefer-dark'
+}
+
+# --- 6. AUTOSTART (INICIO) ---
+# Waybar: Reiniciar para evitar duplicados
+exec_always sh -c "pkill waybar; sleep 0.5; waybar"
+
+# Polkit y notificaciones
 exec --no-startup-id /usr/bin/lxpolkit
 exec --no-startup-id mako
+
+# Applets de bandeja
 exec --no-startup-id nm-applet --indicator
 exec --no-startup-id blueman-applet
 exec --no-startup-id udiskie --tray
 
-# Temas GTK (V8)
-set \$gnome-schema org.gnome.desktop.interface
-exec_always {
-    gsettings set \$gnome-schema gtk-theme 'Arc-Dark'
-    gsettings set \$gnome-schema icon-theme 'Papirus-Dark'
-    gsettings set \$gnome-schema cursor-theme 'DMZ-White'
-    gsettings set \$gnome-schema color-scheme 'prefer-dark'
+# GESTION DE ENERGIA (Swayidle + Swaylock)
+# 300s (5min) -> apagar pantalla. Al volver -> encender. Antes de dormir -> bloquear.
+exec swayidle -w \
+    timeout 300 'swaymsg "output * power off"' \
+    resume 'swaymsg "output * power on"' \
+    before-sleep 'swaylock -f -c 000000'
+
+# --- 7. REGLAS DE VENTANAS (FLOATING) ---
+# Calculadora
+for_window [app_id="galculator"] floating enable, resize set 350 500, move position center
+
+# Ventanas de sistema que deben flotar
+for_window [app_id="pavucontrol"] floating enable
+for_window [app_id="blueman-manager"] floating enable
+for_window [app_id="nm-connection-editor"] floating enable
+for_window [app_id="wdisplays"] floating enable
+for_window [title="File Operation Progress"] floating enable
+for_window [app_id="lxpolkit"] floating enable
+
+# --- 8. ATAJOS DE TECLADO ---
+# Aplicaciones Basicas
+bindsym $mod+Return exec $term
+bindsym $mod+space exec $menu
+bindsym $mod+w exec chromium
+
+# Explorador de archivos (Ranger en Kitty con fix de EDITOR)
+bindsym $mod+f exec env EDITOR=micro kitty -e ranger
+bindsym $mod+p exec wdisplays
+
+# Sistema Sway
+bindsym $mod+q kill
+bindsym $mod+Shift+e exec swaynag -t warning -m 'Salir?' -b 'Sí' 'swaymsg exit'
+bindsym $mod+Shift+c reload
+
+# MODO RESIZE (Faltaba definir el bloque)
+bindsym $mod+r mode "resize"
+mode "resize" {
+    bindsym Left resize shrink width 10px
+    bindsym Down resize grow height 10px
+    bindsym Up resize shrink height 10px
+    bindsym Right resize grow width 10px
+
+    # Salir del modo resize con Escape o Enter
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
 }
 
-# Atajos
-bindsym \$mod+Return exec \$term
-bindsym \$mod+space exec \$menu
-bindsym \$mod+w exec chromium
-bindsym \$mod+f exec thunar
-bindsym \$mod+Shift+q kill
-bindsym \$mod+Shift+e exec swaynag -t warning -m 'Salir?' -b 'Sí' 'swaymsg exit'
-bindsym \$mod+Shift+c reload
-bindsym \$mod+r mode "resize"
+# GESTION DE VENTANAS
+bindsym $mod+v splitv
+bindsym $mod+h splith
 
-# Calculadora en modo flotante
-bindsym XF86Calculator exec galculator
-for_window [app_id="galculator"] floating enable
-for_window [app_id="galculator"] resize set 350 500
-for_window [app_id="galculator"] move position center
+# FLOTANTE: Alternar estado de la ventana actual
+bindsym $mod+Shift+space floating toggle
 
-# Navegación
-bindsym \$mod+Left focus left
-bindsym \$mod+Right focus right
-bindsym \$mod+Up focus up
-bindsym \$mod+Down focus down
-bindsym \$mod+1 workspace number 1
-bindsym \$mod+2 workspace number 2
-bindsym \$mod+3 workspace number 3
-bindsym \$mod+4 workspace number 4
-bindsym \$mod+Shift+1 move container to workspace number 1
-bindsym \$mod+Shift+2 move container to workspace number 2
-bindsym \$mod+Shift+3 move container to workspace number 3
-bindsym \$mod+Shift+4 move container to workspace number 4
+# PANTALLA COMPLETA
+bindsym $mod+Shift+f fullscreen toggle
 
-# Multimedia
-bindsym Print exec grim -g "\$(slurp)" - | swappy -f -
+# SCRATCHPAD (Papelera temporal / Segundo plano)
+# Enviar ventana activa al fondo (ocultar)
+bindsym $mod+minus move scratchpad
+
+# Traer ventana del fondo (mostrar)
+bindsym $mod+Shift+minus scratchpad show
+
+# Navegacion (Foco)
+bindsym $mod+Left focus left
+bindsym $mod+Right focus right
+bindsym $mod+Up focus up
+bindsym $mod+Down focus down
+
+# Mover ventanas (Cambiar de lugar dentro del mismo escritorio)
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Right move right
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Down move down
+
+# Espacios de trabajo (1-4)
+bindsym $mod+1 workspace number 1
+bindsym $mod+2 workspace number 2
+bindsym $mod+3 workspace number 3
+bindsym $mod+4 workspace number 4
+bindsym $mod+5 workspace number 5
+
+# Mover ventanas a espacios
+bindsym $mod+Shift+1 move container to workspace number 1
+bindsym $mod+Shift+2 move container to workspace number 2
+bindsym $mod+Shift+3 move container to workspace number 3
+bindsym $mod+Shift+4 move container to workspace number 4
+bindsym $mod+Shift+5 move container to workspace number 5
+
+# --- 9. MULTIMEDIA Y HARDWARE ---
+# Capturas (Grim + Slurp + Swappy)
+bindsym Print exec grim -g "$(slurp)" - | swappy -f -
+
+# Audio (Volumen y Multimedia)
 bindsym XF86AudioRaiseVolume exec pamixer -i 5
 bindsym XF86AudioLowerVolume exec pamixer -d 5
 bindsym XF86AudioMute exec pamixer -t
 bindsym XF86AudioMicMute exec pamixer --default-source -t
 bindsym XF86AudioPlay exec playerctl play-pause
+bindsym XF86Calculator exec galculator
 
-# Subir brillo (5%)
+# Brillo (Intel/Dell - Con proteccion de pantalla negra)
 bindsym XF86MonBrightnessUp exec brightnessctl --device='intel_backlight' set +5%
-
-# Bajar brillo (Protección: Mínimo 2400/2% para evitar pantalla negra)
-bindsym XF86MonBrightnessDown exec brightnessctl --device='intel_backlight' set 5%- -n 2400
+# Nota: -n limita el brillo mínimo para no quedar a ciegas
+bindsym XF86MonBrightnessDown exec brightnessctl --device='intel_backlight' set 5%- -n 1
 EOF
 
 # --- NUEVO: Script de Gestión de Energía (Optimizado con Señales) ---
