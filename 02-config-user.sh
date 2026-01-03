@@ -276,9 +276,29 @@ EOF
 
 # 5. Kitty Config (V8)
 cat <<EOF > "$USER_HOME/.config/kitty/kitty.conf"
-font_family JetBrains Mono
-font_size 11.0
-background_opacity 0.95
+# --- FUENTES (CONSERVADO) ---
+font_family      JetBrainsMono-ExtraLight
+font_size        13.0
+
+# --- APARIENCIA (CONSERVADO) ---
+background_opacity 0.85
+
+# --- MÁRGENES (EL CAMBIO QUE NECESITAS) ---
+# window_padding_width define el espacio entre el borde y el texto.
+# Te recomiendo empezar con 10 o 15.
+window_padding_width 15
+
+# --- OTRAS CONFIGURACIONES ÚTILES ---
+# Evita que se dibuje el borde de la ventana si solo tienes una abierta
+draw_minimal_borders yes
+# Grosor del borde de la ventana (si usas tiling o varias ventanas)
+window_border_width 1pt
+
+# --- TEMA (CONSERVADO) ---
+# BEGIN_KITTY_THEME
+# Liquid Carbon Transparent
+include current-theme.conf
+# END_KITTY_THEME
 EOF
 
 # 6. Wofi Style (V8)
@@ -288,13 +308,6 @@ window { margin: 0px; border: 2px solid #00BCD4; background-color: #1a1a1a; bord
 #entry:selected { background-color: #00BCD4; border-radius: 4px; font-weight: bold; }
 EOF
 
-# 7. Alias
-echo "--- ⌨️ Añadiendo Alias ---"
-if ! grep -q "alias nvgame=" ~/.bashrc; then
-  echo "alias update='sudo apt update && sudo apt full-upgrade && sudo apt autoremove -y'" >> ~/.bashrc
-  echo "alias nvgame='nv'" >> ~/.bashrc
-  echo "alias gpu='nvidia-smi'" >> ~/.bashrc
-fi
 
 echo "--- ✅ FASE 3 COMPLETADA ---"
 echo "Todo listo. Disfruta tu Dell 5584 Optimizado."
