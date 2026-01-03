@@ -23,8 +23,10 @@ default=wlr;gtk
 org.freedesktop.impl.portal.Settings=gtk
 EOF
 
-# 3. Sway Config (V8 + Fixes Brillo/Waybar)
+# 3. Sway Config 
 cat <<EOF > "$USER_HOME/.config/sway/config"
+# --- SWAY CONFIG V11 (FINAL - CORREGIDA) ---
+
 # --- 1. VARIABLES ---
 set $mod Mod4
 set $term kitty
@@ -85,11 +87,16 @@ exec --no-startup-id nm-applet --indicator
 exec --no-startup-id blueman-applet
 exec --no-startup-id udiskie --tray
 
-# GESTION DE ENERGIA (Swayidle + Swaylock)
-# 300s (5min) -> apagar pantalla. Al volver -> encender. Antes de dormir -> bloquear.
+# GESTION DE ENERGIA DEFINITIVA
+# 300s (5min) -> Apagar pantalla
+# 310s (5min 10s) -> Bloquear pantalla (seguridad extra por si se despierta sola)
+# 600s (10min) -> Suspender sistema
+# before-sleep -> Bloquear pantalla siempre antes de dormir
+
 exec swayidle -w \
     timeout 300 'swaymsg "output * power off"' \
     resume 'swaymsg "output * power on"' \
+    timeout 600 'systemctl suspend' \
     before-sleep 'swaylock -f -c 000000'
 
 # --- 7. REGLAS DE VENTANAS (FLOATING) ---
