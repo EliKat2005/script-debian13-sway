@@ -10,13 +10,13 @@ fi
 
 USER_HOME=$HOME
 
-# 1. Directorios
-echo "--- 📁 Creando carpetas ---"
+# 1. Directorios y Carpetas Base
+echo "--- 📁 Asegurando estructura de carpetas ---"
 xdg-user-dirs-update --force
-mkdir -p "$USER_HOME/Downloads" "$USER_HOME/Documents" "$USER_HOME/Pictures" "$USER_HOME/Music" "$USER_HOME/Videos" "$USER_HOME/Desktop" "$USER_HOME/.config"
+mkdir -p "$USER_HOME/Downloads" "$USER_HOME/Documents" "$USER_HOME/Pictures" "$USER_HOME/Music" "$USER_HOME/Videos" "$USER_HOME/Desktop"
 mkdir -p "$USER_HOME/.config"/{sway,waybar,wofi,mako,alacritty,xdg-desktop-portal}
 
-# 2. Configuración Global de Perfil
+# 2. Configuración Global de Perfil (Nano Default)
 if ! grep -q "export EDITOR=nano" "$USER_HOME/.profile"; then
     echo "export EDITOR=nano" >> "$USER_HOME/.profile"
     echo "export VISUAL=nano" >> "$USER_HOME/.profile"
@@ -29,9 +29,9 @@ default=wlr;gtk
 org.freedesktop.impl.portal.Settings=gtk
 EOF
 
-# 4. Sway Config
+# 4. Sway Config 
 cat <<EOF > "$USER_HOME/.config/sway/config"
-# --- SWAY CONFIG V11 ---
+# --- SWAY CONFIG ---
 
 # VARIABLES
 set \$mod Mod4
@@ -96,17 +96,17 @@ for_window [app_id="nm-connection-editor"] floating enable
 for_window [app_id="wdisplays"] floating enable
 for_window [app_id="lxpolkit"] floating enable
 for_window [title="File Operation Progress"] floating enable
-# IMV flotante
+# IMV flotante y centrado
 for_window [app_id="imv"] floating enable, move position center
 
 # ATAJOS
 bindsym \$mod+Return exec \$term
 bindsym \$mod+space exec \$menu
 bindsym \$mod+w exec chromium
-bindsym \$mod+f exec \$term -e thunar
+bindsym \$mod+f exec thunar
 bindsym \$mod+p exec wdisplays
 
-# GRABACIÓN (Script Global)
+# GRABACIÓN
 bindsym \$mod+Shift+r exec recorder
 
 # CONTROL SWAY
@@ -186,7 +186,7 @@ background = "#1a1a1a"
 foreground = "#ffffff"
 EOF
 
-# 6. Asociaciones de Archivos
+# 6. Asociaciones de Archivos (Mimeapps)
 echo "--- 📄 Asociando aplicaciones por defecto ---"
 mkdir -p "$USER_HOME/.config"
 cat <<EOF > "$USER_HOME/.config/mimeapps.list"
@@ -200,8 +200,11 @@ inode/directory=thunar.desktop
 text/plain=alacritty.desktop
 EOF
 
-# 7. Waybar y Scripts Auxiliares
+# 7. Waybar y Scripts
+echo "--- 🔋 Configurando Waybar ---"
 mkdir -p "$USER_HOME/.config/waybar/scripts"
+
+# Script Power Profiles
 cat <<EOF > "$USER_HOME/.config/waybar/scripts/power-profiles.sh"
 #!/bin/bash
 current=\$(powerprofilesctl get)
@@ -222,6 +225,7 @@ esac
 EOF
 chmod +x "$USER_HOME/.config/waybar/scripts/power-profiles.sh"
 
+# Waybar Config
 cat <<EOF > "$USER_HOME/.config/waybar/config"
 {
     "layer": "top",
@@ -254,6 +258,7 @@ cat <<EOF > "$USER_HOME/.config/waybar/config"
 }
 EOF
 
+# Waybar Style
 cat <<EOF > "$USER_HOME/.config/waybar/style.css"
 * { border: none; border-radius: 0; font-family: "FontAwesome", "JetBrains Mono", sans-serif; font-size: 14px; min-height: 0; }
 window#waybar { background-color: rgba(26, 26, 26, 0.95); color: #ffffff; border-bottom: 2px solid #00BCD4; }
@@ -270,12 +275,15 @@ window#waybar { background-color: rgba(26, 26, 26, 0.95); color: #ffffff; border
 #custom-power.power-saver { color: #26A65B; }
 EOF
 
+# 8. Wofi Style
 cat <<EOF > "$USER_HOME/.config/wofi/style.css"
 window { margin: 0px; border: 2px solid #00BCD4; background-color: #1a1a1a; border-radius: 8px; font-family: "JetBrains Mono"; font-size: 14px; }
 #input { margin: 5px; border-radius: 4px; border: none; color: #ffffff; background-color: #2b2b2b; }
 #entry:selected { background-color: #00BCD4; border-radius: 4px; font-weight: bold; }
 EOF
 
+# 9. Limpieza
 rm -f "$USER_HOME/.nvidia-settings-rc"
 
 echo "--- ✅ FASE 3 COMPLETADA ---"
+echo "Por favor, CIERRA SESIÓN y vuelve a entrar para aplicar todos los cambios."
