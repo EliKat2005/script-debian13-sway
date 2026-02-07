@@ -1,7 +1,7 @@
 #!/bin/bash
 # Ejecutar como ROOT (sudo)
 
-echo "--- 🚀 FASE 1: INSTALACIÓN DEL SISTEMA BASE (V11 CLEAN) ---"
+echo "--- 🚀 FASE 1: INSTALACIÓN DEL SISTEMA BASE ---"
 
 if [ "$EUID" -ne 0 ]; then
   echo "❌ EJECUTAR COMO ROOT (sudo)."
@@ -18,8 +18,9 @@ fi
 apt update && apt -y full-upgrade
 
 # 2. Kernel, Firmware y Utilidades
-echo "--- 📦 Instalando Kernel y Firmware Específico Dell ---"
+echo "--- 📦 Instalando Kernel y Firmware ---"
 KERNEL_VERSION=$(uname -r)
+# Bloque 1: Firmware esencial
 apt -y install curl build-essential pkg-config libglib2.0-bin xdg-user-dirs unzip \
     "linux-headers-$KERNEL_VERSION" \
     firmware-linux-nonfree \
@@ -28,7 +29,10 @@ apt -y install curl build-essential pkg-config libglib2.0-bin xdg-user-dirs unzi
     firmware-realtek \
     firmware-intel-sound \
     firmware-sof-signed \
-    intel-microcode \
+    intel-microcode
+
+# Bloque 2: Utilidades Gráficas y Drivers
+apt -y install \
     mesa-utils \
     rfkill \
     intel-media-va-driver-non-free \
@@ -37,35 +41,37 @@ apt -y install curl build-essential pkg-config libglib2.0-bin xdg-user-dirs unzi
     snapper \
     inotify-tools \
     git \
-    make 
+    make \
+    wf-recorder \
+    libnotify-bin 
 
 # 3. Stack Sway
 echo "--- 🖼️ Instalando Entorno Gráfico ---"
 PKGS_SWAY=(
   # Core
   sway swaybg swayidle swaylock xwayland
-  waybar wofi mako-notifier 
-  
+  waybar wofi mako-notifier
+
   # Utilidades
   grim slurp swappy wl-clipboard wdisplays
   xdg-desktop-portal-wlr xdg-desktop-portal-gtk
-  greetd tuigreet lxpolkit wf-recorder libnotify-bin
-  
+  greetd tuigreet lxpolkit
+
   # Terminal y Archivos
   alacritty
   thunar thunar-archive-plugin thunar-volman gvfs-backends
   xarchiver zip p7zip-full unrar-free
-  
+
   # Apps Base
   chromium mpv gnome-disk-utility galculator
   imv zathura
-  
+
   # Hardware y Audio
   brightnessctl pamixer playerctl
   btop nm-connection-editor blueman network-manager-gnome
   pipewire pipewire-pulse wireplumber pavucontrol libspa-0.2-bluetooth
   power-profiles-daemon fwupd thermald
-  
+
   # Temas
   fonts-inter fonts-jetbrains-mono fonts-font-awesome fonts-noto-color-emoji
   papirus-icon-theme arc-theme desktop-base dmz-cursor-theme
@@ -152,7 +158,16 @@ systemctl enable fstrim.timer
 systemctl disable getty@tty1 2>/dev/null || true
 systemctl mask getty@tty1 2>/dev/null || true
 
+# 10. Permisos de Usuario (CRÍTICO: Fix Grabación)
+echo "--- 👥 Configurando Permisos de Usuario ---"
+REAL_USER=${SUDO_USER:-$(whoami)}
+if [ "$REAL_USER" != "root" ]; then
+    usermod -aG video,render "$REAL_USER"
+    echo "✅ Usuario $REAL_USER añadido a grupos video y render."
+fi
+
 apt autoremove -y
 apt clean
 
 echo "--- ✅ FASE 1 COMPLETADA ---"
+echo "REINICIA EL SISTEMA para aplicar kernel y permisos."
