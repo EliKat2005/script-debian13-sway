@@ -37,20 +37,19 @@ apt -y install curl build-essential pkg-config libglib2.0-bin xdg-user-dirs unzi
     snapper \
     inotify-tools \
     git \
-    make \
-    wf-recorder
+    make 
 
 # 3. Stack Sway
 echo "--- 🖼️ Instalando Entorno Gráfico ---"
 PKGS_SWAY=(
   # Core
   sway swaybg swayidle swaylock xwayland
-  waybar wofi mako-notifier
+  waybar wofi mako-notifier 
   
   # Utilidades
   grim slurp swappy wl-clipboard wdisplays
   xdg-desktop-portal-wlr xdg-desktop-portal-gtk
-  greetd tuigreet lxpolkit
+  greetd tuigreet lxpolkit wf-recorder libnotify-bin
   
   # Terminal y Archivos
   alacritty
