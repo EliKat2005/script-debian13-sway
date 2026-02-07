@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # -----------------------------------------------------------------------------
-# NVIDIA SETUP FOR DEBIAN 13 (TRIXIE) - V2.1 FIXED REPOS
+# NVIDIA SETUP FOR DEBIAN 13
 # -----------------------------------------------------------------------------
 
 log(){ echo -e "\n\033[1;36m[+] $1\033[0m"; }
@@ -12,17 +12,14 @@ if [[ $EUID -ne 0 ]]; then
    exit 1
 fi
 
-# --- FASE 0: ARREGLO DE REPOSITORIOS (CRÍTICO) ---
+# --- FASE 0: ARREGLO DE REPOSITORIOS ---
 log "0. Verificando y corrigiendo repositorios (Non-Free / Contrib)"
 
 SOURCES_FILE="/etc/apt/sources.list.d/debian.sources"
 
 if [[ -f "$SOURCES_FILE" ]]; then
-    # Hacemos backup por si acaso
     cp "$SOURCES_FILE" "$SOURCES_FILE.bak_nvidia"
     
-    # Usamos sed para inyectar 'contrib' y 'non-free' si faltan.
-    # Buscamos la línea que tenga 'main' y 'non-free-firmware' pero NO 'non-free ' (espacio clave)
     if grep -q "Components: main non-free-firmware" "$SOURCES_FILE"; then
         log "   Detectado repositorio incompleto. Activando contrib y non-free..."
         sed -i 's/Components: main non-free-firmware/Components: main contrib non-free non-free-firmware/g' "$SOURCES_FILE"
@@ -32,7 +29,6 @@ if [[ -f "$SOURCES_FILE" ]]; then
     fi
 else
     log "⚠️ ALERTA: No se encontró $SOURCES_FILE. Verificando sources.list antiguo..."
-    # Fallback para sistemas antiguos (por seguridad)
     if grep -q "^deb.*main non-free-firmware$" /etc/apt/sources.list; then
          sed -i 's/main non-free-firmware/main contrib non-free non-free-firmware/g' /etc/apt/sources.list
     fi
@@ -91,7 +87,7 @@ systemctl enable nvidia-suspend.service
 systemctl enable nvidia-hibernate.service
 systemctl enable nvidia-resume.service
 
-# --- FASE 4: PARCHE SWAY (CRÍTICO) ---
+# --- FASE 4: PARCHE SWAY ---
 
 log "6. PARCHE CRÍTICO: Habilitar Nvidia en Sway/Tuigreet"
 CONFIG_GREETD="/etc/greetd/config.toml"
@@ -99,7 +95,6 @@ CONFIG_GREETD="/etc/greetd/config.toml"
 # Verificamos si existe el archivo y si NO tiene ya el parche
 if [[ -f "$CONFIG_GREETD" ]]; then
     if grep -q "cmd sway --time" "$CONFIG_GREETD"; then
-    	# Nota las comillas dobles afuera y simples adentro
     	sed -i "s/cmd sway/cmd 'sway --unsupported-gpu'/" "$CONFIG_GREETD"
         log "✅ Greetd parcheado: Sway iniciará en modo --unsupported-gpu"
     elif grep -q "cmd sway --unsupported-gpu" "$CONFIG_GREETD"; then
