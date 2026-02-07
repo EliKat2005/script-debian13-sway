@@ -13,8 +13,7 @@ USER_HOME=$HOME
 # 1. Directorios y Carpetas Base
 echo "--- 📁 Asegurando estructura de carpetas ---"
 xdg-user-dirs-update --force
-mkdir -p "$USER_HOME/Downloads" "$USER_HOME/Documents" "$USER_HOME/Pictures" "$USER_HOME/Music" "$USER_HOME/Videos" "$USER_HOME/Desktop"
-mkdir -p "$USER_HOME/.config"/{sway,waybar,wofi,mako,alacritty,xdg-desktop-portal}
+mkdir -p "$USER_HOME/.config"/{sway,waybar,wofi,mako,alacritty,xdg-desktop-portal,qt5ct,qt6ct}
 
 # 2. Configuración Global de Perfil (Nano Default)
 if ! grep -q "export EDITOR=nano" "$USER_HOME/.profile"; then
@@ -315,6 +314,7 @@ gsettings set org.gnome.desktop.interface cursor-theme 'DMZ-White'
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
 
 # Auto-configurar QT5CT para usar GTK2
+mkdir -p "$USER_HOME/.config/qt5ct"
 cat <<EOF > "$USER_HOME/.config/qt5ct/qt5ct.conf"
 [Appearance]
 icon_theme=Papirus-Dark
@@ -323,6 +323,7 @@ style=gtk2
 EOF
 
 # Auto-configurar QT6CT
+mkdir -p "$USER_HOME/.config/qt6ct"
 cat <<EOF > "$USER_HOME/.config/qt6ct/qt6ct.conf"
 [Appearance]
 icon_theme=Papirus-Dark
