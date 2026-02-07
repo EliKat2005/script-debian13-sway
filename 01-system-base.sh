@@ -20,13 +20,27 @@ install_pkg() {
     fi
 }
 
-# 1. Repositorios y Actualización
-echo "--- 📡 Configurando Repositorios y Actualizando ---"
-if [[ -f /etc/apt/sources.list.d/debian.sources ]]; then
-    sed -i.bak 's/Components: main.*/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources
-elif [[ -f /etc/apt/sources.list ]]; then
-    sed -i.bak 's/main$/main contrib non-free non-free-firmware/' /etc/apt/sources.list
+# --- 1. REPOSITORIOS ---
+echo "--- 📡 Configurando Repositorios (Contrib / Non-Free) ---"
+SOURCES_FILE="/etc/apt/sources.list.d/debian.sources"
+
+if [[ -f "$SOURCES_FILE" ]]; then
+    cp "$SOURCES_FILE" "$SOURCES_FILE.bak_script"
+    
+    if ! grep -q "contrib" "$SOURCES_FILE" || ! grep -q "non-free " "$SOURCES_FILE"; then
+        echo "   Detectado repositorio incompleto. Activando contrib y non-free..."
+        sed -i 's/Components: main.*/Components: main contrib non-free non-free-firmware/g' "$SOURCES_FILE"
+        echo "   Repositorios corregidos."
+    else
+        echo "   Repositorios ya configurados correctamente."
+    fi
+elif [[ -f "/etc/apt/sources.list" ]]; then
+    if grep -q "^deb.*main" /etc/apt/sources.list; then
+         sed -i 's/main.*/main contrib non-free non-free-firmware/g' /etc/apt/sources.list
+    fi
 fi
+
+echo "--- 🔄 Actualizando lista de paquetes... ---"
 apt update && apt -y full-upgrade
 
 # 2. Kernel y Firmware
@@ -52,7 +66,7 @@ install_pkg "APPS_BASE" "chromium mpv gnome-disk-utility galculator imv zathura"
 install_pkg "AUDIO_RED" "brightnessctl pamixer playerctl btop nm-connection-editor blueman network-manager-gnome pipewire pipewire-pulse wireplumber pavucontrol libspa-0.2-bluetooth power-profiles-daemon fwupd thermald"
 
 # 9. Temas y Apariencia
-install_pkg "TEMAS_COMPAT" "fonts-inter fonts-jetbrains-mono fonts-font-awesome fonts-noto-color-emoji papirus-icon-theme arc-theme desktop-base dmz-cursor-theme qt5ct qt6ct qtwayland5 qt6-wayland openssh-server qt5-style-plugins gtk2-engines-murrine gtk2-engines-pixbuf"
+install_pkg "TEMAS_COMPAT" "fonts-inter fonts-jetbrains-mono fonts-font-awesome fonts-noto-color-emoji papirus-icon-theme arc-theme desktop-base dmz-cursor-theme qt5ct qt6ct qtwayland5 qt6-wayland openssh-server gtk2-engines-murrine gtk2-engines-pixbuf"
 # --- CONFIGURACIONES DEL SISTEMA ---
 
 echo "--- 🌍 Configurando Variables de Entorno ---"
