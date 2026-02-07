@@ -153,17 +153,6 @@ systemctl enable fstrim.timer
 systemctl disable getty@tty1 2>/dev/null || true
 systemctl mask getty@tty1 2>/dev/null || true
 
-# 10. BTRFS en GRUB
-echo "--- 📸 Configurando Grub-BTRFS ---"
-if [ ! -d "/usr/share/grub-btrfs" ]; then
-    git clone https://github.com/Antynea/grub-btrfs.git /tmp/grub-btrfs
-    cd /tmp/grub-btrfs
-    make install
-    cd /
-    rm -rf /tmp/grub-btrfs
-fi
-systemctl enable grub-btrfsd
-
 apt autoremove -y
 apt clean
 
