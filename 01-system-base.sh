@@ -37,7 +37,7 @@ install_pkg "DRIVERS_INTEL" "mesa-utils rfkill intel-media-va-driver-non-free in
 install_pkg "UTILIDADES_SYS" "snapper inotify-tools git make wf-recorder libnotify-bin"
 
 # 4. Entorno Sway (Core)
-install_pkg "SWAY_CORE" "sway swaybg swayidle swaylock xwayland waybar wofi mako-notifier"
+install_pkg "SWAY_CORE" "sway swaybg swayidle swaylock xwayland waybar wofi mako-notifier wlogout"
 
 # 5. Utilidades de Escritorio
 install_pkg "PORTALES_POLKIT" "grim slurp swappy wl-clipboard wdisplays xdg-desktop-portal-wlr xdg-desktop-portal-gtk greetd tuigreet lxpolkit"
