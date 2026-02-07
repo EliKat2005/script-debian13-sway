@@ -68,15 +68,6 @@ client.focused_inactive #333333 #5f676a #ffffff #484e50   #5f676a
 client.unfocused        #333333 #222222 #888888 #292d2e   #222222
 client.urgent           #2f343a #900000 #ffffff #900000   #900000
 
-# TEMA GTK
-set \$gnome-schema org.gnome.desktop.interface
-exec_always {
-    gsettings set \$gnome-schema gtk-theme 'Arc-Dark'
-    gsettings set \$gnome-schema icon-theme 'Papirus-Dark'
-    gsettings set \$gnome-schema cursor-theme 'DMZ-White'
-    gsettings set \$gnome-schema color-scheme 'prefer-dark'
-}
-
 # AUTOSTART
 exec_always sh -c "pkill waybar; sleep 0.5; waybar"
 exec --no-startup-id /usr/bin/lxpolkit
@@ -282,7 +273,30 @@ window { margin: 0px; border: 2px solid #00BCD4; background-color: #1a1a1a; bord
 #entry:selected { background-color: #00BCD4; border-radius: 4px; font-weight: bold; }
 EOF
 
-# 9. Limpieza
+# 9. CONFIGURACIÓN AUTOMÁTICA DE TEMAS
+echo "--- 🎨 Aplicando Temas GTK y QT Automáticamente ---"
+gsettings set org.gnome.desktop.interface gtk-theme 'Arc-Dark'
+gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
+gsettings set org.gnome.desktop.interface cursor-theme 'DMZ-White'
+gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
+
+# Auto-configurar QT5CT para usar GTK2
+cat <<EOF > "$USER_HOME/.config/qt5ct/qt5ct.conf"
+[Appearance]
+icon_theme=Papirus-Dark
+standard_dialogs=gtk2
+style=gtk2
+EOF
+
+# Auto-configurar QT6CT
+cat <<EOF > "$USER_HOME/.config/qt6ct/qt6ct.conf"
+[Appearance]
+icon_theme=Papirus-Dark
+standard_dialogs=gtk2
+style=gtk2
+EOF
+
+# 10. Limpieza
 rm -f "$USER_HOME/.nvidia-settings-rc"
 
 echo "--- ✅ FASE 3 COMPLETADA ---"
