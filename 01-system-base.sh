@@ -1,15 +1,27 @@
 #!/bin/bash
 # Ejecutar como ROOT (sudo)
 
-echo "--- 🚀 FASE 1: INSTALACIÓN DEL SISTEMA BASE ---"
+echo "--- 🚀 FASE 1: INSTALACIÓN MODULAR ---"
 
 if [ "$EUID" -ne 0 ]; then
   echo "❌ EJECUTAR COMO ROOT (sudo)."
   exit 1
 fi
 
-# 1. Configuración de Repositorios
-echo "--- 📦 Configurando Repositorios ---"
+# --- FUNCIÓN DE INSTALACIÓN SEGURA ---
+install_pkg() {
+    echo "--- 📦 Instalando bloque: $1 ---"
+    apt -y install $2
+    if [ $? -ne 0 ]; then
+        echo "⚠️ ERROR CRÍTICO: Falló la instalación de $1. Verifica tu internet."
+        sleep 3
+    else
+        echo "✅ Bloque $1 instalado correctamente."
+    fi
+}
+
+# 1. Repositorios y Actualización
+echo "--- 📡 Configurando Repositorios y Actualizando ---"
 if [[ -f /etc/apt/sources.list.d/debian.sources ]]; then
     sed -i.bak 's/Components: main.*/Components: main contrib non-free non-free-firmware/' /etc/apt/sources.list.d/debian.sources
 elif [[ -f /etc/apt/sources.list ]]; then
@@ -17,70 +29,34 @@ elif [[ -f /etc/apt/sources.list ]]; then
 fi
 apt update && apt -y full-upgrade
 
-# 2. Kernel, Firmware y Utilidades
-echo "--- 📦 Instalando Kernel y Firmware ---"
-KERNEL_VERSION=$(uname -r)
-# Bloque 1: Firmware esencial
-apt -y install curl build-essential pkg-config libglib2.0-bin xdg-user-dirs unzip \
-    "linux-headers-$KERNEL_VERSION" \
-    firmware-linux-nonfree \
-    firmware-misc-nonfree \
-    firmware-atheros \
-    firmware-realtek \
-    firmware-intel-sound \
-    firmware-sof-signed \
-    intel-microcode
+# 2. Kernel y Firmware
+install_pkg "FIRMWARE_KERNEL" "curl build-essential pkg-config libglib2.0-bin xdg-user-dirs unzip linux-headers-$(uname -r) firmware-linux-nonfree firmware-misc-nonfree firmware-atheros firmware-realtek firmware-intel-sound firmware-sof-signed intel-microcode"
 
-# Bloque 2: Utilidades Gráficas y Drivers
-apt -y install \
-    mesa-utils \
-    rfkill \
-    intel-media-va-driver-non-free \
-    intel-gpu-tools \
-    vainfo \
-    snapper \
-    inotify-tools \
-    git \
-    make \
-    wf-recorder \
-    libnotify-bin 
+# 3. Drivers Gráficos y Utilidades de Sistema
+install_pkg "DRIVERS_INTEL" "mesa-utils rfkill intel-media-va-driver-non-free intel-gpu-tools vainfo"
+install_pkg "UTILIDADES_SYS" "snapper inotify-tools git make wf-recorder libnotify-bin"
 
-# 3. Stack Sway
-echo "--- 🖼️ Instalando Entorno Gráfico ---"
-PKGS_SWAY=(
-  # Core
-  sway swaybg swayidle swaylock xwayland
-  waybar wofi mako-notifier
+# 4. Entorno Sway (Core)
+install_pkg "SWAY_CORE" "sway swaybg swayidle swaylock xwayland waybar wofi mako-notifier"
 
-  # Utilidades
-  grim slurp swappy wl-clipboard wdisplays
-  xdg-desktop-portal-wlr xdg-desktop-portal-gtk
-  greetd tuigreet lxpolkit
+# 5. Utilidades de Escritorio
+install_pkg "PORTALES_POLKIT" "grim slurp swappy wl-clipboard wdisplays xdg-desktop-portal-wlr xdg-desktop-portal-gtk greetd tuigreet lxpolkit"
 
-  # Terminal y Archivos
-  alacritty
-  thunar thunar-archive-plugin thunar-volman gvfs-backends
-  xarchiver zip p7zip-full unrar-free
+# 6. Gestión de Archivos
+install_pkg "ARCHIVOS" "alacritty thunar thunar-archive-plugin thunar-volman gvfs-backends xarchiver zip p7zip-full unrar-free tumbler ffmpegthumbnailer"
 
-  # Apps Base
-  chromium mpv gnome-disk-utility galculator
-  imv zathura
+# 7. Aplicaciones Base
+install_pkg "APPS_BASE" "chromium mpv gnome-disk-utility galculator imv zathura"
 
-  # Hardware y Audio
-  brightnessctl pamixer playerctl
-  btop nm-connection-editor blueman network-manager-gnome
-  pipewire pipewire-pulse wireplumber pavucontrol libspa-0.2-bluetooth
-  power-profiles-daemon fwupd thermald
+# 8. Audio, Red y Energía
+install_pkg "AUDIO_RED" "brightnessctl pamixer playerctl btop nm-connection-editor blueman network-manager-gnome pipewire pipewire-pulse wireplumber pavucontrol libspa-0.2-bluetooth power-profiles-daemon fwupd thermald"
 
-  # Temas
-  fonts-inter fonts-jetbrains-mono fonts-font-awesome fonts-noto-color-emoji
-  papirus-icon-theme arc-theme desktop-base dmz-cursor-theme
-  qt5ct qt6ct qtwayland5 openssh-server
-)
-apt -y --no-install-recommends install "${PKGS_SWAY[@]}"
+# 9. Temas y Apariencia
+install_pkg "TEMAS_QT" "fonts-inter fonts-jetbrains-mono fonts-font-awesome fonts-noto-color-emoji papirus-icon-theme arc-theme desktop-base dmz-cursor-theme qt5ct qt6ct qtwayland5 qt6-wayland openssh-server"
 
-# 4. Variables Globales
-echo "--- 🌍 Configurando Variables Globales ---"
+# --- CONFIGURACIONES DEL SISTEMA ---
+
+echo "--- 🌍 Configurando Variables de Entorno ---"
 cat > /etc/environment <<EOF
 MOZ_ENABLE_WAYLAND=1
 QT_QPA_PLATFORM=wayland;xcb
@@ -92,28 +68,26 @@ EDITOR=nano
 VISUAL=nano
 EOF
 
-# 5. NetworkManager
-echo "--- 🌐 Blindando Red ---"
+echo "--- 🌐 Configurando NetworkManager ---"
 cat > /etc/NetworkManager/NetworkManager.conf <<EOF
 [main]
 plugins=keyfile
 [ifupdown]
 managed=true
 EOF
-
+# Desactivar gestión antigua de interfaces si existe
 if [[ -f /etc/network/interfaces ]]; then
     mv /etc/network/interfaces /etc/network/interfaces.bak
     echo "# Gestionado por NetworkManager" > /etc/network/interfaces
 fi
 
-# 6. Optimizaciones Dell 5584
-echo "--- ⚡ Aplicando Optimizaciones Hardware (GuC/HuC) ---"
+echo "--- ⚡ Optimizaciones Hardware (Intel GuC/HuC) ---"
 echo "options i915 enable_guc=2 enable_fbc=1 fastboot=1" > /etc/modprobe.d/i915.conf
 echo "options pcie_aspm policy=performance" > /etc/modprobe.d/pcie_aspm.conf
+# Regla para permitir cambiar brillo sin ser root
 echo 'ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"' > /etc/udev/rules.d/90-backlight.rules
 
-# 7. Login Manager
-echo "--- 🔐 Configurando Login ---"
+echo "--- 🔐 Configurando Login (Greetd + Tuigreet) ---"
 TUIGREET_PATH=$(which tuigreet || echo "/usr/bin/tuigreet")
 mkdir -p /etc/greetd
 cat > /etc/greetd/config.toml <<EOF
@@ -124,11 +98,11 @@ command = "$TUIGREET_PATH --cmd sway --time --remember --remember-session"
 user = "_greetd"
 EOF
 
-# 8. Script de Grabación Global (recorder)
-echo "--- 🎥 Instalando herramienta de grabación ---"
+echo "--- 🎥 Instalando Script Recorder ---"
 cat > /usr/local/bin/recorder <<'EOF'
 #!/bin/bash
-# Uso: Ejecutar 'recorder' para iniciar/parar grabación Intel VAAPI
+# Script de grabación Intel VAAPI
+# NO USAR CTRL+C. Ejecutar de nuevo para detener.
 PIDFILE="/tmp/recorder_pid"
 VIDEO_FILE="$HOME/Videos/Screencast_$(date +%Y%m%d_%H%M%S).mp4"
 DEVICE="/dev/dri/renderD128"
@@ -138,36 +112,39 @@ if [ -f "$PIDFILE" ]; then
     if ps -p $PID > /dev/null; then
         kill -SIGINT $PID
         rm "$PIDFILE"
-        notify-send "🔴 Grabación Detenida" "Guardado en: $VIDEO_FILE"
+        notify-send "🔴 Grabación Finalizada" "Guardado: $(basename $VIDEO_FILE)"
         exit 0
     fi
 fi
-
 notify-send "🟢 Grabando Pantalla" "Intel VAAPI (Full HD)"
 wf-recorder --audio --codec h264_vaapi --device "$DEVICE" --file "$VIDEO_FILE" &
 echo $! > "$PIDFILE"
 EOF
 chmod +x /usr/local/bin/recorder
 
-# 9. Servicios
-echo "--- 🔧 Servicios ---"
+echo "--- 🔧 Servicios y Limpieza ---"
 systemctl disable ssh
 systemctl enable greetd
 systemctl enable bluetooth
 systemctl enable fstrim.timer
+# Evitar getty en tty1 para limpiar el boot
 systemctl disable getty@tty1 2>/dev/null || true
 systemctl mask getty@tty1 2>/dev/null || true
 
-# 10. Permisos de Usuario (CRÍTICO: Fix Grabación)
+# PERMISOS DE USUARIO
 echo "--- 👥 Configurando Permisos de Usuario ---"
 REAL_USER=${SUDO_USER:-$(whoami)}
 if [ "$REAL_USER" != "root" ]; then
     usermod -aG video,render "$REAL_USER"
     echo "✅ Usuario $REAL_USER añadido a grupos video y render."
+else
+    echo "⚠️ ADVERTENCIA: No se pudo detectar usuario real. Ejecuta 'sudo usermod -aG video,render TU_USUARIO' manualmente."
 fi
 
 apt autoremove -y
 apt clean
 
-echo "--- ✅ FASE 1 COMPLETADA ---"
-echo "REINICIA EL SISTEMA para aplicar kernel y permisos."
+echo "--- ✅ INSTALACIÓN V13 COMPLETADA ---"
+echo "PASOS SIGUIENTES:"
+echo "1. REINICIA el sistema (sudo reboot)."
+echo "2. Ejecuta el script de usuario (03-config-user.sh)."
