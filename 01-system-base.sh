@@ -52,8 +52,7 @@ install_pkg "APPS_BASE" "chromium mpv gnome-disk-utility galculator imv zathura"
 install_pkg "AUDIO_RED" "brightnessctl pamixer playerctl btop nm-connection-editor blueman network-manager-gnome pipewire pipewire-pulse wireplumber pavucontrol libspa-0.2-bluetooth power-profiles-daemon fwupd thermald"
 
 # 9. Temas y Apariencia
-install_pkg "TEMAS_QT" "fonts-inter fonts-jetbrains-mono fonts-font-awesome fonts-noto-color-emoji papirus-icon-theme arc-theme desktop-base dmz-cursor-theme qt5ct qt6ct qtwayland5 qt6-wayland openssh-server"
-
+install_pkg "TEMAS_COMPAT" "fonts-inter fonts-jetbrains-mono fonts-font-awesome fonts-noto-color-emoji papirus-icon-theme arc-theme desktop-base dmz-cursor-theme qt5ct qt6ct qtwayland5 qt6-wayland openssh-server qt5-style-plugins gtk2-engines-murrine gtk2-engines-pixbuf"
 # --- CONFIGURACIONES DEL SISTEMA ---
 
 echo "--- 🌍 Configurando Variables de Entorno ---"
@@ -75,7 +74,6 @@ plugins=keyfile
 [ifupdown]
 managed=true
 EOF
-# Desactivar gestión antigua de interfaces si existe
 if [[ -f /etc/network/interfaces ]]; then
     mv /etc/network/interfaces /etc/network/interfaces.bak
     echo "# Gestionado por NetworkManager" > /etc/network/interfaces
@@ -87,7 +85,7 @@ echo "options pcie_aspm policy=performance" > /etc/modprobe.d/pcie_aspm.conf
 # Regla para permitir cambiar brillo sin ser root
 echo 'ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"' > /etc/udev/rules.d/90-backlight.rules
 
-echo "--- 🔐 Configurando Login (Greetd + Tuigreet) ---"
+echo "--- 🔐 Configurando Login ---"
 TUIGREET_PATH=$(which tuigreet || echo "/usr/bin/tuigreet")
 mkdir -p /etc/greetd
 cat > /etc/greetd/config.toml <<EOF
@@ -127,7 +125,6 @@ systemctl disable ssh
 systemctl enable greetd
 systemctl enable bluetooth
 systemctl enable fstrim.timer
-# Evitar getty en tty1 para limpiar el boot
 systemctl disable getty@tty1 2>/dev/null || true
 systemctl mask getty@tty1 2>/dev/null || true
 
@@ -144,7 +141,5 @@ fi
 apt autoremove -y
 apt clean
 
-echo "--- ✅ INSTALACIÓN V13 COMPLETADA ---"
-echo "PASOS SIGUIENTES:"
-echo "1. REINICIA el sistema (sudo reboot)."
-echo "2. Ejecuta el script de usuario (03-config-user.sh)."
+echo "--- ✅ INSTALACIÓN COMPLETADA ---"
+echo " REINICIA el sistema (sudo reboot)."
