@@ -273,7 +273,41 @@ window { margin: 0px; border: 2px solid #00BCD4; background-color: #1a1a1a; bord
 #entry:selected { background-color: #00BCD4; border-radius: 4px; font-weight: bold; }
 EOF
 
-# 9. CONFIGURACIÓN AUTOMÁTICA DE TEMAS
+# 9. Notificaciones Mako
+echo "--- 🔔 Configurando Notificaciones Modernas ---"
+mkdir -p "$USER_HOME/.config/mako"
+cat <<EOF > "$USER_HOME/.config/mako/config"
+# 1. Comportamiento
+max-history=10
+sort=-time
+default-timeout=5000
+
+# 2. Apariencia
+font=Inter 11
+background-color=#1a1a1aee
+text-color=#ffffff
+width=350
+height=150
+margin=10
+padding=15
+border-size=2
+border-color=#00BCD4
+border-radius=8
+icons=1
+max-icon-size=48
+icon-location=left
+
+# 3. Reglas
+[urgency=critical]
+border-color=#ff5555
+default-timeout=0
+
+[app-name=recorder]
+border-color=#26A65B
+default-timeout=3000
+EOF
+
+# 10. CONFIGURACIÓN AUTOMÁTICA DE TEMAS
 echo "--- 🎨 Aplicando Temas GTK y QT Automáticamente ---"
 gsettings set org.gnome.desktop.interface gtk-theme 'Arc-Dark'
 gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
@@ -296,7 +330,7 @@ standard_dialogs=gtk2
 style=gtk2
 EOF
 
-# 10. Limpieza
+# 11. Limpieza
 rm -f "$USER_HOME/.nvidia-settings-rc"
 
 echo "--- ✅ FASE 3 COMPLETADA ---"
