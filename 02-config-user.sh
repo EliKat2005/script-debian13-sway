@@ -103,7 +103,7 @@ bindsym \$mod+Shift+r exec recorder
 # CONTROL SWAY
 bindsym \$mod+q kill
 bindsym \$mod+Shift+c reload
-bindsym \$mod+Shift+e exec swaynag -t warning -m 'Salir?' -b 'Sí' 'swaymsg exit'
+bindsym \$mod+Shift+e exec wlogout
 
 # VENTANAS
 bindsym \$mod+v splitv
