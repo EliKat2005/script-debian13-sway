@@ -8,6 +8,30 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
+# --- 0. CONFIGURACIÓN BTRFS (PRE-INSTALACIÓN) ---
+echo "--- 💿 Ajustando BTRFS tempranamente para Timeshift ---"
+ROOT_FSTYPE=$(findmnt -n -o FSTYPE /)
+if [ "$ROOT_FSTYPE" = "btrfs" ]; then
+    ROOT_DEV=$(findmnt -n -o SOURCE /)
+    echo "   Detectada partición raíz en BTRFS ($ROOT_DEV)."
+    MNT_BTRFS=$(mktemp -d)
+    mount -t btrfs -o subvolid=5 "$ROOT_DEV" "$MNT_BTRFS"
+    
+    if [ -d "$MNT_BTRFS/@rootfs" ]; then
+        echo "   Renombrando subvolumen '@rootfs' a '@'..."
+        mv "$MNT_BTRFS/@rootfs" "$MNT_BTRFS/@"
+        sed -i 's/subvol=@rootfs/subvol=@/g' /etc/fstab
+        update-grub
+        echo "✅ Estructura BTRFS corregida."
+    elif [ -d "$MNT_BTRFS/@" ]; then
+        echo "✅ El subvolumen '@' ya existe. Todo en orden."
+    fi
+    umount "$MNT_BTRFS"
+    rmdir "$MNT_BTRFS"
+else
+    echo "   La partición no es BTRFS. Omitiendo."
+fi
+
 # --- FUNCIÓN DE INSTALACIÓN SEGURA ---
 install_pkg() {
     echo "--- 📦 Instalando bloque: $1 ---"
@@ -40,6 +64,15 @@ elif [[ -f "/etc/apt/sources.list" ]]; then
     fi
 fi
 
+echo "--- ⚡ PRE-CONFIGURACIÓN: Optimizaciones Hardware (Intel i7 / PCIe) ---"
+echo "options i915 enable_guc=3 enable_fbc=1 fastboot=1" > /etc/modprobe.d/i915.conf
+echo "options pcie_aspm policy=performance" > /etc/modprobe.d/pcie_aspm.conf
+echo 'ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"' > /etc/udev/rules.d/90-backlight.rules
+
+echo "--- 🌡️ Optimizando Sensores Térmicos (Batería y Ventiladores Dell) ---"
+echo "coretemp" > /etc/modules-load.d/sensors.conf
+echo "dell-smm-hwmon" >> /etc/modules-load.d/sensors.conf
+
 echo "--- 🔄 Actualizando lista de paquetes... ---"
 apt update && apt -y full-upgrade
 
@@ -48,7 +81,7 @@ install_pkg "FIRMWARE_KERNEL" "curl build-essential pkg-config libglib2.0-bin xd
 
 # 3. Drivers Gráficos y Utilidades de Sistema
 install_pkg "DRIVERS_INTEL" "mesa-utils rfkill intel-media-va-driver-non-free intel-gpu-tools vainfo"
-install_pkg "UTILIDADES_SYS" "timeshift inotify-tools git make wf-recorder libnotify-bin"
+install_pkg "UTILIDADES_SYS" "timeshift inotify-tools git make wf-recorder libnotify-bin lm-sensors"
 
 # 4. Entorno Sway (Core)
 install_pkg "SWAY_CORE" "sway swaybg swayidle swaylock xwayland waybar wofi mako-notifier wlogout"
@@ -93,14 +126,8 @@ managed=true
 EOF
 if [[ -f /etc/network/interfaces ]]; then
     mv /etc/network/interfaces /etc/network/interfaces.bak
-    echo "# Gestionado por NetworkManager" > /etc/network/interfaces
+    echo -e "# Gestionado por NetworkManager\nauto lo\niface lo inet loopback" > /etc/network/interfaces
 fi
-
-echo "--- ⚡ Optimizaciones Hardware (Intel GuC/HuC) ---"
-echo "options i915 enable_guc=2 enable_fbc=1 fastboot=1" > /etc/modprobe.d/i915.conf
-echo "options pcie_aspm policy=performance" > /etc/modprobe.d/pcie_aspm.conf
-# Regla para permitir cambiar brillo sin ser root
-echo 'ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"' > /etc/udev/rules.d/90-backlight.rules
 
 echo "--- 🔐 Configurando Login ---"
 TUIGREET_PATH=$(which tuigreet || echo "/usr/bin/tuigreet")
@@ -145,6 +172,12 @@ systemctl enable fstrim.timer
 systemctl disable getty@tty1 2>/dev/null || true
 systemctl mask getty@tty1 2>/dev/null || true
 
+# DESHABILITAR SERVICIOS BASURA (Clean Boot)
+echo "   Purgando servicios innecesarios (Impresoras, Modems, RPC)..."
+systemctl disable cups 2>/dev/null || true
+systemctl disable ModemManager 2>/dev/null || true
+systemctl disable rpcbind 2>/dev/null || true
+
 # PERMISOS DE USUARIO
 echo "--- 👥 Configurando Permisos de Usuario ---"
 REAL_USER=${SUDO_USER:-$(whoami)}
@@ -157,6 +190,9 @@ fi
 
 apt autoremove -y
 apt clean
+
+echo "--- 🧠 Horneando Initramfs ---"
+update-initramfs -u
 
 echo "--- ✅ INSTALACIÓN COMPLETADA ---"
 echo " REINICIA el sistema (sudo reboot)."

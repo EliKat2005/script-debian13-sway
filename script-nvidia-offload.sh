@@ -58,14 +58,16 @@ apt -y install \
 
 # --- FASE 2: CONFIGURACIÓN KERNEL ---
 
-log "3. Configurando GRUB (Modeset + Silenciador de Logs + BIOS Fix)"
+log "3. Configurando GRUB (Clean Boot + Silenciador + BIOS Fix)"
+# Limpiamos parámetros previos (si existieran) para evitar contradecirnos
+sed -i 's/ nvidia-drm.modeset=1//g' /etc/default/grub
+sed -i 's/ nvidia-drm.fbdev=1//g' /etc/default/grub
+
 if ! grep -q "pci=noaer" /etc/default/grub; then
-    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 nvidia-drm.modeset=1 nvidia-drm.fbdev=1 pci=noaer loglevel=3"/' /etc/default/grub
-    update-grub
-    log "✅ GRUB Actualizado y Silenciado."
-else
-    log "✅ GRUB ya estaba optimizado."
+    sed -i 's/GRUB_CMDLINE_LINUX_DEFAULT="\(.*\)"/GRUB_CMDLINE_LINUX_DEFAULT="\1 pci=noaer loglevel=3"/' /etc/default/grub
 fi
+update-grub
+log "✅ GRUB Actualizado al modo Clean Boot."
 
 # --- FASE 3: UTILIDADES ---
 
@@ -80,7 +82,7 @@ exec "$@"
 EOF
 chmod +x /usr/local/bin/nv
 
-log "5. Configurando Gestión de Energía (Suspensión Segura)"
+log "5. Configurando Gestión de Energía (Suspensión Segura y Cero Consumo en Reposo)"
 echo "options nvidia NVreg_PreserveVideoMemoryAllocations=1 NVreg_TemporaryFilePath=/var/tmp" > /etc/modprobe.d/nvidia-power.conf
 
 systemctl enable nvidia-suspend.service
@@ -108,6 +110,12 @@ fi
 if ! grep -q "WLR_NO_HARDWARE_CURSORS" /etc/environment; then
     echo "WLR_NO_HARDWARE_CURSORS=1" >> /etc/environment
 fi
+
+log "7. Limpieza Profunda y Regeneración de Initramfs"
+# Eliminar archivo fantasma para evitar errores de módulos en boot
+rm -f /etc/modules-load.d/nvidia.conf
+# Purgar instrucciones viejas del núcleo
+update-initramfs -u
 
 log "✅ INSTALACIÓN DE NVIDIA COMPLETADA"
 log "   Reinicia el equipo."
