@@ -43,6 +43,8 @@ font pango:Inter 11
 # ENTORNO
 exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
 exec systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
+seat seat0 xcursor_theme DMZ-White 24
+xwayland disable
 
 # INPUT
 input * {
@@ -60,7 +62,7 @@ output * bg /usr/share/images/desktop-base/default fill
 
 # APARIENCIA
 default_border pixel 2
-gaps inner 6
+gaps inner 8
 gaps outer 0
 client.focused          #00BCD4 #263238 #FFFFFF #00BCD4   #00BCD4
 client.focused_inactive #333333 #5f676a #ffffff #484e50   #5f676a
@@ -73,7 +75,8 @@ exec --no-startup-id /usr/bin/lxpolkit
 exec --no-startup-id mako
 exec --no-startup-id nm-applet --indicator
 exec --no-startup-id blueman-applet
-exec --no-startup-id udiskie --tray
+exec --no-startup-id udiskie --tray --smart-tray
+exec --no-startup-id thunar --daemon
 
 # ENERGIA
 exec swayidle -w timeout 300 'swaymsg "output * power off"' resume 'swaymsg "output * power on"' timeout 600 'systemctl suspend' before-sleep 'swaylock -f -c 000000'
@@ -92,7 +95,7 @@ for_window [app_id="imv"] floating enable, move position center
 # ATAJOS
 bindsym \$mod+Return exec \$term
 bindsym \$mod+space exec \$menu
-bindsym $mod+w exec brave-browser
+bindsym \$mod+w exec brave-browser
 bindsym \$mod+f exec thunar
 bindsym \$mod+p exec wdisplays
 
@@ -164,16 +167,28 @@ cat <<EOF > "$USER_HOME/.config/alacritty/alacritty.toml"
 [font]
 size = 11.0
 normal = { family = "JetBrains Mono", style = "Regular" }
+offset = { x = 0, y = 4 } # Añade interlineado extra para mejor lectura
 
 [window]
-opacity = 0.85
-padding = { x = 10, y = 10 }
+opacity = 1.0
+padding = { x = 24, y = 24 } # Margen interno generoso para no asfixiar el texto
 decorations = "None"
 dynamic_title = true
 
 [colors.primary]
-background = "#1a1a1a"
-foreground = "#ffffff"
+background = "#181818" # Un tono de oscuridad más profundo y elegante
+foreground = "#e0e0e0" # Blanco roto para reducir la fatiga visual
+
+# Paleta base para que 'ls' y comandos tengan colores armónicos
+[colors.normal]
+black   = "#181818"
+red     = "#ff5555"
+green   = "#26A65B"
+yellow  = "#ffeb3b"
+blue    = "#00BCD4"
+magenta = "#b388ff"
+cyan    = "#84ffff"
+white   = "#e0e0e0"
 EOF
 
 # 6. Asociaciones de Archivos (Mimeapps)
@@ -227,12 +242,14 @@ cat <<EOF > "$USER_HOME/.config/waybar/config"
     "clock": { "format": " {:%H:%M   %d/%m}", "tooltip-format": "<big>{:%Y %B}</big>\n<tt>{calendar}</tt>" },
     "cpu": { "format": " {usage}%" },
     "memory": { "format": " {}%" },
-    "network": { "format-wifi": "", "format-ethernet": "", "format-disconnected": "⚠", "tooltip-format": "{essid} ({signalStrength}%)" },
+    "network": { "format-wifi": " {essid}", "format-ethernet": "", "format-disconnected": "⚠", "tooltip-format": "{essid} ({signalStrength}%)" },
     "pulseaudio": { "format": "{icon} {volume}%", "format-muted": "🔇 {volume}%", "format-icons": { "default": ["", "", ""] }, "on-click": "pavucontrol" },
     "battery": { 
         "interval": 60, 
         "states": { "warning": 30, "critical": 15 }, 
         "format": "{capacity}% {icon}", 
+        "format-charging": "{capacity}% ",
+        "format-plugged": "{capacity}% ",
         "format-icons": ["", "", "", "", ""] 
     },
     "custom/power": {
@@ -267,9 +284,11 @@ EOF
 
 # 8. Wofi Style
 cat <<EOF > "$USER_HOME/.config/wofi/style.css"
-window { margin: 0px; border: 2px solid #00BCD4; background-color: #1a1a1a; border-radius: 8px; font-family: "JetBrains Mono"; font-size: 14px; }
-#input { margin: 5px; border-radius: 4px; border: none; color: #ffffff; background-color: #2b2b2b; }
-#entry:selected { background-color: #00BCD4; border-radius: 4px; font-weight: bold; }
+window { margin: 0px; border: 2px solid #00BCD4; background-color: #181818; border-radius: 8px; font-family: "JetBrains Mono"; font-size: 14px; }
+#input { margin: 10px; padding: 10px; border-radius: 4px; border: none; color: #e0e0e0; background-color: #2b2b2b; }
+#inner-box { margin: 5px; }
+#entry { padding: 8px; border-radius: 4px; }
+#entry:selected { background-color: #00BCD4; color: #181818; font-weight: bold; }
 EOF
 
 # 9. Notificaciones Mako
@@ -283,10 +302,11 @@ default-timeout=5000
 
 # 2. Apariencia
 font=Inter 11
-background-color=#1a1a1aee
+background-color=#1a1a1a
 text-color=#ffffff
 width=350
 height=150
+max-visible=5
 margin=10
 padding=15
 border-size=2
