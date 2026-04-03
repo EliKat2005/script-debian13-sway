@@ -92,7 +92,7 @@ for_window [app_id="imv"] floating enable, move position center
 # ATAJOS
 bindsym \$mod+Return exec \$term
 bindsym \$mod+space exec \$menu
-bindsym \$mod+w exec chromium
+bindsym $mod+w exec brave-browser
 bindsym \$mod+f exec thunar
 bindsym \$mod+p exec wdisplays
 

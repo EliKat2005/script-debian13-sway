@@ -44,11 +44,11 @@ echo "--- 🔄 Actualizando lista de paquetes... ---"
 apt update && apt -y full-upgrade
 
 # 2. Kernel y Firmware
-install_pkg "FIRMWARE_KERNEL" "curl build-essential pkg-config libglib2.0-bin xdg-user-dirs unzip linux-headers-$(uname -r) firmware-linux-nonfree firmware-misc-nonfree firmware-atheros firmware-realtek firmware-intel-sound firmware-sof-signed intel-microcode"
+install_pkg "FIRMWARE_KERNEL" "curl build-essential pkg-config libglib2.0-bin xdg-user-dirs unzip linux-headers-amd64 dkms firmware-linux-nonfree firmware-misc-nonfree firmware-atheros firmware-realtek firmware-sof-signed intel-microcode"
 
 # 3. Drivers Gráficos y Utilidades de Sistema
 install_pkg "DRIVERS_INTEL" "mesa-utils rfkill intel-media-va-driver-non-free intel-gpu-tools vainfo"
-install_pkg "UTILIDADES_SYS" "snapper inotify-tools git make wf-recorder libnotify-bin"
+install_pkg "UTILIDADES_SYS" "timeshift inotify-tools git make wf-recorder libnotify-bin"
 
 # 4. Entorno Sway (Core)
 install_pkg "SWAY_CORE" "sway swaybg swayidle swaylock xwayland waybar wofi mako-notifier wlogout"
@@ -57,16 +57,19 @@ install_pkg "SWAY_CORE" "sway swaybg swayidle swaylock xwayland waybar wofi mako
 install_pkg "PORTALES_POLKIT" "grim slurp swappy wl-clipboard wdisplays xdg-desktop-portal-wlr xdg-desktop-portal-gtk greetd tuigreet lxpolkit"
 
 # 6. Gestión de Archivos
-install_pkg "ARCHIVOS" "alacritty thunar thunar-archive-plugin thunar-volman gvfs-backends xarchiver zip p7zip-full unrar-free tumbler ffmpegthumbnailer"
+install_pkg "ARCHIVOS" "alacritty thunar thunar-archive-plugin thunar-volman gvfs-backends xarchiver zip p7zip-full unrar tumbler ffmpegthumbnailer"
 
 # 7. Aplicaciones Base
-install_pkg "APPS_BASE" "chromium mpv gnome-disk-utility galculator imv zathura"
+install_pkg "APPS_BASE" "mpv gnome-disk-utility galculator imv zathura"
+
+echo "--- 🌐 Instalando Brave Browser ---"
+curl -fsS https://dl.brave.com/install.sh | sh
 
 # 8. Audio, Red y Energía
 install_pkg "AUDIO_RED" "brightnessctl pamixer playerctl btop nm-connection-editor blueman network-manager-gnome pipewire pipewire-pulse wireplumber pavucontrol libspa-0.2-bluetooth power-profiles-daemon fwupd thermald"
 
 # 9. Temas y Apariencia
-install_pkg "TEMAS_COMPAT" "fonts-inter fonts-jetbrains-mono fonts-font-awesome fonts-noto-color-emoji papirus-icon-theme arc-theme desktop-base dmz-cursor-theme qt5ct qt6ct qtwayland5 qt6-wayland openssh-server gtk2-engines-murrine gtk2-engines-pixbuf"
+install_pkg "TEMAS_COMPAT" "fonts-inter fonts-jetbrains-mono fonts-font-awesome fonts-noto-color-emoji papirus-icon-theme arc-theme desktop-base dmz-cursor-theme qt5ct qt6ct qtwayland5 qt6-wayland gtk2-engines-murrine gtk2-engines-pixbuf"
 # --- CONFIGURACIONES DEL SISTEMA ---
 
 echo "--- 🌍 Configurando Variables de Entorno ---"
@@ -136,7 +139,6 @@ EOF
 chmod +x /usr/local/bin/recorder
 
 echo "--- 🔧 Servicios y Limpieza ---"
-systemctl disable ssh
 systemctl enable greetd
 systemctl enable bluetooth
 systemctl enable fstrim.timer

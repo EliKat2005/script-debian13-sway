@@ -41,11 +41,11 @@ dpkg --add-architecture i386
 apt update
 
 log "2. Instalando Driver Nvidia Propietario + Librerías 32-bits"
-KERNEL_VERSION=$(uname -r)
 
 # Instalamos todo en un solo bloque para que APT resuelva dependencias mejor
 apt -y install \
-    linux-headers-"$KERNEL_VERSION" \
+    linux-headers-amd64 \
+    dkms \
     nvidia-driver \
     nvidia-smi \
     nvidia-vulkan-icd \
