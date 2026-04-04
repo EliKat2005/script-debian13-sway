@@ -326,6 +326,22 @@ border-color=#26A65B
 default-timeout=3000
 EOF
 
+# Configuración de MPV para reproducir videos
+echo "--- Configuración de MPV ---"
+mkdir -p "$USER_HOME/.config/mpv"
+cat <<EOF > "$USER_HOME/.config/mpv/mpv.conf"
+# --- FIX GRÁFICO PARA WAYLAND E INTEL ---
+vo=gpu
+gpu-api=opengl
+gpu-context=wayland
+
+# --- RENDIMIENTO Y BATERÍA ---
+# Activar decodificación por hardware (Intel VAAPI)
+hwdec=auto
+# Perfil optimizado para evitar desincronización de audio/video
+profile=fast
+EOF
+
 # 10. CONFIGURACIÓN AUTOMÁTICA DE TEMAS
 echo "--- 🎨 Aplicando Temas GTK y QT Automáticamente ---"
 gsettings set org.gnome.desktop.interface gtk-theme 'Arc-Dark'
