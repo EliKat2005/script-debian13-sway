@@ -352,6 +352,8 @@ style=gtk2
 EOF
 
 # 11. Limpieza
+systemctl --user mask evolution-source-registry.service
+systemctl --user mask evolution-addressbook-factory.service
 rm -f "$USER_HOME/.nvidia-settings-rc"
 
 echo "--- ✅ FASE 3 COMPLETADA ---"
