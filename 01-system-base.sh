@@ -123,22 +123,22 @@ cat > /usr/local/bin/recorder <<'EOF'
 #!/bin/bash
 
 # 1. Detectar carpeta de videos
-TARGET_DIR=\$(xdg-user-dir VIDEOS 2>/dev/null || echo \$HOME/Videos)
-mkdir -p \"\$TARGET_DIR\"
-VIDEO_FILE=\"\$TARGET_DIR/Screencast_\$(date +%Y%m%d_%H%M%S).mp4\"
-DEVICE=\"/dev/dri/renderD128\"
+TARGET_DIR=$(xdg-user-dir VIDEOS 2>/dev/null || echo $HOME/Videos)
+mkdir -p "$TARGET_DIR"
+VIDEO_FILE="$TARGET_DIR/Screencast_$(date +%Y%m%d_%H%M%S).mp4"
+DEVICE="/dev/dri/renderD128"
 
 # 2. Lógica de Conmutación
-if pgrep -x \"wf-recorder\" > /dev/null; then
-    pkill -SIGINT -x wf-recorderr4
+if pgrep -x "wf-recorder" > /dev/null; then
+    pkill -SIGINT -x wf-recorder
 
     # Esperamos un momento a que cierre el archivo
     sleep 1
-    notify-send \"🔴 Grabación Finalizada\" \"Guardado en: \$(basename \"\$TARGET_DIR\")\"
+    notify-send "🔴 Grabación Finalizada" "Guardado en: $(basename "$TARGET_DIR")"
 else
     # SI NO ESTÁ CORRIENDO: Iniciamos la grabación
-    notify-send \"🟢 Grabando Pantalla\" \"Intel VAAPI (Full HD)\"
-    wf-recorder --audio --codec h264_vaapi --device \"\$DEVICE\" --file \"\$VIDEO_FILE\" &
+    notify-send "🟢 Grabando Pantalla" "Intel VAAPI (Full HD)"
+    wf-recorder --audio --codec h264_vaapi --device "$DEVICE" --file "$VIDEO_FILE" &
 fi
 EOF
 chmod +x /usr/local/bin/recorder
