@@ -43,7 +43,7 @@ elif [[ -f "/etc/apt/sources.list" ]]; then
 fi
 
 echo "--- ⚡ PRE-CONFIGURACIÓN: Optimizaciones Hardware (Intel i7 / PCIe) ---"
-echo "options i915 enable_guc=3 enable_fbc=1 fastboot=1" > /etc/modprobe.d/i915.conf
+echo "options i915 enable_guc=3 enable_fbc=1" > /etc/modprobe.d/i915.conf
 echo "options pcie_aspm policy=performance" > /etc/modprobe.d/pcie_aspm.conf
 echo 'ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"' > /etc/udev/rules.d/90-backlight.rules
 
