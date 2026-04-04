@@ -9,28 +9,6 @@ if [ "$EUID" -ne 0 ]; then
 fi
 
 # --- 0. CONFIGURACIÓN BTRFS (PRE-INSTALACIÓN) ---
-echo "--- 💿 Ajustando BTRFS tempranamente para Timeshift ---"
-ROOT_FSTYPE=$(findmnt -n -o FSTYPE /)
-if [ "$ROOT_FSTYPE" = "btrfs" ]; then
-    ROOT_DEV=$(findmnt -n -o SOURCE /)
-    echo "   Detectada partición raíz en BTRFS ($ROOT_DEV)."
-    MNT_BTRFS=$(mktemp -d)
-    mount -t btrfs -o subvolid=5 "$ROOT_DEV" "$MNT_BTRFS"
-    
-    if [ -d "$MNT_BTRFS/@rootfs" ]; then
-        echo "   Renombrando subvolumen '@rootfs' a '@'..."
-        mv "$MNT_BTRFS/@rootfs" "$MNT_BTRFS/@"
-        sed -i 's/subvol=@rootfs/subvol=@/g' /etc/fstab
-        update-grub
-        echo "✅ Estructura BTRFS corregida."
-    elif [ -d "$MNT_BTRFS/@" ]; then
-        echo "✅ El subvolumen '@' ya existe. Todo en orden."
-    fi
-    umount "$MNT_BTRFS"
-    rmdir "$MNT_BTRFS"
-else
-    echo "   La partición no es BTRFS. Omitiendo."
-fi
 
 # --- FUNCIÓN DE INSTALACIÓN SEGURA ---
 install_pkg() {
@@ -81,7 +59,7 @@ install_pkg "FIRMWARE_KERNEL" "curl build-essential pkg-config libglib2.0-bin xd
 
 # 3. Drivers Gráficos y Utilidades de Sistema
 install_pkg "DRIVERS_INTEL" "mesa-utils rfkill intel-media-va-driver-non-free intel-gpu-tools vainfo"
-install_pkg "UTILIDADES_SYS" "timeshift inotify-tools git make wf-recorder libnotify-bin lm-sensors"
+install_pkg "UTILIDADES_SYS" "timeshift inotify-tools git make wf-recorder libnotify-bin lm-sensors ufw"
 
 # 4. Entorno Sway (Core)
 install_pkg "SWAY_CORE" "sway swaybg swayidle swaylock xwayland waybar wofi mako-notifier wlogout"
@@ -152,7 +130,7 @@ DEVICE=\"/dev/dri/renderD128\"
 
 # 2. Lógica de Conmutación
 if pgrep -x \"wf-recorder\" > /dev/null; then
-    pkill -SIGINT -x wf-recorder
+    pkill -SIGINT -x wf-recorderr4
 
     # Esperamos un momento a que cierre el archivo
     sleep 1
@@ -171,6 +149,11 @@ systemctl enable bluetooth
 systemctl enable fstrim.timer
 systemctl disable getty@tty1 2>/dev/null || true
 systemctl mask getty@tty1 2>/dev/null || true
+
+echo "--- Firewall ---"
+ufw default deny incoming
+ufw default allow outgoing
+ufw enable
 
 # DESHABILITAR SERVICIOS BASURA (Clean Boot)
 echo "   Purgando servicios innecesarios (Impresoras, Modems, RPC)..."
