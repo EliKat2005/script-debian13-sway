@@ -15,7 +15,7 @@ fi
 # --- FUNCIÓN DE INSTALACIÓN SEGURA ---
 install_pkg() {
     echo "--- 📦 Instalando bloque: $1 ---"
-    apt -y install $2
+    apt-get -y --no-install-recommends --no-install-suggests install $2
     if [ $? -ne 0 ]; then
         echo "⚠️ ERROR CRÍTICO: Falló la instalación de $1. Verifica tu internet."
         sleep 3
@@ -54,7 +54,7 @@ echo "options i915 enable_guc=3 enable_fbc=1" > /etc/modprobe.d/i915.conf
 rm -f /etc/modprobe.d/pcie_aspm.conf
 echo 'ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"' > /etc/udev/rules.d/90-backlight.rules
 cat > /etc/udev/rules.d/60-nvme-scheduler.rules <<'EOF'
-ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="nvme*n*", ATTR{queue/scheduler}="none"
+ACTION=="add", SUBSYSTEM=="block", KERNEL=="nvme0n1", ATTR{queue/scheduler}="none"
 EOF
 udevadm control --reload-rules
 if [[ -w /sys/block/nvme0n1/queue/scheduler ]]; then
