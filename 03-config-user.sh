@@ -202,7 +202,7 @@ image/gif=imv.desktop
 image/webp=imv.desktop
 application/pdf=org.pwmt.zathura.desktop
 inode/directory=thunar.desktop
-text/plain=alacritty.desktop
+text/plain=Alacritty.desktop
 EOF
 
 # 7. Waybar y Scripts

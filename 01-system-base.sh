@@ -8,7 +8,9 @@ if [ "$EUID" -ne 0 ]; then
   exit 1
 fi
 
-# --- 0. CONFIGURACIÓN BTRFS (PRE-INSTALACIÓN) ---
+# --- 0. PARTICIONADO (REALIZADO ANTES POR EL USUARIO) ---
+# La raíz BTRFS, sus subvolúmenes, /boot y /home deben prepararse durante
+# la instalación de Debian. Este script no modifica particiones ni sistemas.
 
 # --- FUNCIÓN DE INSTALACIÓN SEGURA ---
 install_pkg() {
@@ -44,7 +46,7 @@ fi
 
 echo "--- ⚡ PRE-CONFIGURACIÓN: Optimizaciones Hardware (Intel i7 / PCIe) ---"
 echo "options i915 enable_guc=3 enable_fbc=1" > /etc/modprobe.d/i915.conf
-echo "options pcie_aspm policy=performance" > /etc/modprobe.d/pcie_aspm.conf
+rm -f /etc/modprobe.d/pcie_aspm.conf
 echo 'ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"' > /etc/udev/rules.d/90-backlight.rules
 
 echo "--- 🌡️ Optimizando Sensores Térmicos (Batería y Ventiladores Dell) ---"
@@ -58,8 +60,8 @@ apt update && apt -y full-upgrade
 install_pkg "FIRMWARE_KERNEL" "curl build-essential pkg-config libglib2.0-bin xdg-user-dirs unzip linux-headers-amd64 dkms firmware-linux-nonfree firmware-misc-nonfree firmware-atheros firmware-realtek firmware-sof-signed intel-microcode"
 
 # 3. Drivers Gráficos y Utilidades de Sistema
-install_pkg "DRIVERS_INTEL" "mesa-utils rfkill intel-media-va-driver-non-free intel-gpu-tools vainfo"
-install_pkg "UTILIDADES_SYS" "timeshift inotify-tools git make wf-recorder libnotify-bin lm-sensors ufw"
+install_pkg "DRIVERS_INTEL" "mesa-utils rfkill intel-media-va-driver-non-free intel-gpu-tools vainfo vulkan-tools"
+install_pkg "UTILIDADES_SYS" "timeshift inotify-tools git make wf-recorder libnotify-bin lm-sensors ufw udiskie zram-tools"
 
 # 4. Entorno Sway (Core)
 install_pkg "SWAY_CORE" "sway swaybg swayidle swaylock xwayland waybar wofi mako-notifier wlogout"
@@ -82,6 +84,24 @@ install_pkg "AUDIO_RED" "brightnessctl pamixer playerctl btop nm-connection-edit
 # 9. Temas y Apariencia
 install_pkg "TEMAS_COMPAT" "fonts-inter fonts-jetbrains-mono fonts-font-awesome fonts-noto-color-emoji papirus-icon-theme arc-theme desktop-base dmz-cursor-theme qt5ct qt6ct qtwayland5 qt6-wayland gtk2-engines-murrine gtk2-engines-pixbuf"
 # --- CONFIGURACIONES DEL SISTEMA ---
+
+echo "--- 🧊 Configurando ZRAM sin swap en disco ---"
+cat > /etc/default/zramswap <<'EOF'
+# ZRAM para el portátil Dell Inspiron 5584 con 16 GB de RAM
+ALGO=zstd
+SIZE=8192
+PRIORITY=100
+EOF
+
+cat > /etc/sysctl.d/99-zram.conf <<'EOF'
+# ZRAM prioritario sobre memoria inactiva
+vm.swappiness=150
+vm.page-cluster=0
+vm.watermark_boost_factor=0
+EOF
+
+sysctl --system
+systemctl enable --now zramswap.service
 
 echo "--- 🌍 Configurando Variables de Entorno ---"
 cat > /etc/environment <<EOF

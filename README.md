@@ -6,7 +6,8 @@ Una arquitectura de instalación y configuración sumamente robusta, moderna y p
 
 - **Pureza Wayland:** Entorno 100% nativo. `XWayland` está deshabilitado para ahorrar RAM, evitar lag de renderizado y mantener el entorno limpio de dependencias X11 heredadas.
 - **Gráficos Híbridos Inteligentes (Nvidia Prime Offload):** Configurado para que Sway se ejecute nativamente sobre la gráfica integrada (Intel UHD 620) maximizando la batería. La GPU dedicada (Nvidia MX130 Maxwell) se mantiene en reposo (D3cold/Offload) y solo se invoca usando el wrapper `nv` (ej. `nv blender`).
-- **Integración Nativa BTRFS + Timeshift:** Renombrado automático del subvolumen `@rootfs` a `@` para que `Timeshift` funcione de maravilla de forma nativa. Snapshots instantáneos sin ocupar espacio extra.
+- **BTRFS preparado manualmente + Timeshift:** La raíz BTRFS y el subvolumen `@` se crean durante el particionado manual de la instalación Netinstall. Los scripts no modifican particiones ni subvolúmenes.
+- **ZRAM sin swap en disco:** Instala `zram-tools`, crea un dispositivo ZSTD de 8 GB y configura prioridad 100 con `swappiness=150`.
 - **Gestión Térmica Especializada (Dell/Intel):** Integración profunda con `thermald`, `coretemp` y `dell-smm-hwmon` para prevenir el *thermal throttling* en procesadores Intel (i7 Whiskey Lake) y gestionar los ventiladores de forma natural.
 - **Armonía Visual Global:** Todas las aplicaciones (sean GTK o QT) siguen el tema maestro `Arc-Dark` con iconos `Papirus-Dark` gracias al puente nativo de variables de entorno y `qt5ct`/`qt6ct`.
 
@@ -18,15 +19,16 @@ El proyecto está dividido en tres comandos secuenciales para garantizar un desp
 
 ### 1. `01-system-base.sh` (Kernel, Sistema BTRFS y Dependencias)
 - **Requiere SUDO.**
-- Renombra subvolúmenes BTRFS para Timeshift.
-- Configura parámetros del kernel (`i915.enable_guc=3`, `pcie_aspm=force`) y sensores de temperatura desde el Modprobe.
+- No modifica particiones ni sistemas de archivos; el particionado BTRFS/XFS se realiza manualmente durante la instalación de Debian.
+- Configura `i915 enable_guc=3 enable_fbc=1`, sensores térmicos y ZRAM de 8 GB con ZSTD.
+- Instala herramientas Vulkan, `udiskie`, Timeshift y utilidades de gráficos.
 - Elimina *bloatware* y deshabilita servicios innecesarios (`cups`, `rpcbind`, `ModemManager`).
 - Reconstruye el `initramfs` asegurando carga temprana expedita.
 
 ### 2. `02-script-nvidia-offload.sh` (Gestión de GPU Híbrida)
 - **Requiere SUDO.**
 - Instala drivers propietarios y `linux-headers-amd64` vía `dkms` para actualizaciones automáticas ante cambios del kernel de Debian.
-- Aplica "Clean Boot": remueve modesets forzados en GRUB, elimina configuraciones fantasmas antiguas de X11, y prepara a Sway para iniciar sin pánico de GPU.
+- Conserva el arranque limpio: evita modosets forzados, elimina `pci=noaer` si existiera y prepara Sway para iniciar sin pánico de GPU.
 
 ### 3. `03-config-user.sh` (Interfaz y Entorno de Usuario)
 - **Ejecutar SIN SUDO (Usuario normal).**
@@ -41,7 +43,7 @@ El repositorio incluye motores inyectores en la carpeta `Sway-Styles` para cambi
 
 1. **`00-theme-default.sh` (Default Pro):** Colores oscuros muy profundos (`#181818`), blanco roto (`#e0e0e0`) para evitar astigmatismo prolongado, con acentos en cyan brillante. Para productividad diaria.
 2. **`01-theme-tokyo.sh` (Tokyo Neon):** Tonos cyberpunk. Fondos violeta/azulado (`#1a1b26`), espacios de ventana agresivos y un poderoso vivo Magenta purpúreo. Ideal para ambientes de total oscuridad.
-3. **`03-theme-nord.sh` (Nord Arctic):** Paleta glacial de máxima paz visual. Grises escarchados, "Frost blue" (`#88c0d0`) y Waybars redondeados de forma suave.
+3. **`02-theme-nord.sh` (Nord Arctic):** Paleta glacial de máxima paz visual. Grises escarchados, "Frost blue" (`#88c0d0`) y Waybars redondeados de forma suave.
 
 *Simplemente ejecuta el script del tema que desees desde la terminal y Sway se adaptará instantáneamente.*
 
@@ -50,6 +52,13 @@ El repositorio incluye motores inyectores en la carpeta `Sway-Styles` para cambi
 ## ⚡ Instalación Rápida
 
 Para desplegar este entorno en una instalación limpia de Debian 13 (Netinst / Minimal):
+
+Antes de ejecutar los scripts:
+
+1. Particiona manualmente el disco durante la instalación Netinstall.
+2. Da formato BTRFS a la raíz, usa el subvolumen `@` y monta la EFI y `/boot` necesarias.
+3. Da formato XFS o el formato deseado a `/home` y a discos adicionales.
+4. Los scripts no crean, formatean ni renombran particiones o subvolúmenes.
 
 ```bash
 # 1. Configuración de Sistema, BTRFS y Modprobe
