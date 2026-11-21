@@ -44,7 +44,7 @@ font pango:Inter 11
 exec dbus-update-activation-environment --systemd WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
 exec systemctl --user import-environment WAYLAND_DISPLAY XDG_CURRENT_DESKTOP
 seat seat0 xcursor_theme DMZ-White 24
-xwayland disable
+xwayland enable
 
 # INPUT
 input * {
@@ -70,9 +70,9 @@ client.unfocused        #333333 #222222 #888888 #292d2e   #222222
 client.urgent           #2f343a #900000 #ffffff #900000   #900000
 
 # AUTOSTART
-exec_always sh -c "pkill waybar; sleep 0.5; waybar"
+exec waybar
 exec --no-startup-id /usr/bin/lxpolkit
-exec --no-startup-id mako
+exec mako
 exec --no-startup-id nm-applet --indicator
 exec --no-startup-id blueman-applet
 exec --no-startup-id udiskie --tray --smart-tray
@@ -95,7 +95,7 @@ for_window [app_id="imv"] floating enable, move position center
 # ATAJOS
 bindsym \$mod+Return exec \$term
 bindsym \$mod+space exec \$menu
-bindsym \$mod+w exec brave-browser
+bindsym \$mod+w exec sh -c 'command -v brave-origin >/dev/null && exec brave-origin || exec brave-browser'
 bindsym \$mod+f exec thunar
 bindsym \$mod+p exec wdisplays
 

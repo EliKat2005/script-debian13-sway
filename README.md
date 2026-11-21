@@ -4,7 +4,7 @@ Una arquitectura de instalación y configuración sumamente robusta, moderna y p
 
 ## 🌟 Características Principales
 
-- **Pureza Wayland:** Entorno 100% nativo. `XWayland` está deshabilitado para ahorrar RAM, evitar lag de renderizado y mantener el entorno limpio de dependencias X11 heredadas.
+- **Wayland prioritario con compatibilidad:** Sway usa Wayland nativamente y mantiene XWayland habilitado para aplicaciones compatibles que todavía requieren X11.
 - **Gráficos Híbridos Inteligentes (Nvidia Prime Offload):** Configurado para que Sway se ejecute nativamente sobre la gráfica integrada (Intel UHD 620) maximizando la batería. La GPU dedicada (Nvidia MX130 Maxwell) se mantiene en reposo (D3cold/Offload) y solo se invoca usando el wrapper `nv` (ej. `nv blender`).
 - **BTRFS preparado manualmente + Timeshift:** La raíz BTRFS y el subvolumen `@` se crean durante el particionado manual de la instalación Netinstall. Los scripts no modifican particiones ni subvolúmenes.
 - **ZRAM sin swap en disco:** Instala `zram-tools`, crea un dispositivo ZSTD de 8 GB y configura prioridad 100 con `swappiness=150`.
@@ -21,6 +21,8 @@ El proyecto está dividido en tres comandos secuenciales para garantizar un desp
 - **Requiere SUDO.**
 - No modifica particiones ni sistemas de archivos; el particionado BTRFS/XFS se realiza manualmente durante la instalación de Debian.
 - Configura `i915 enable_guc=3 enable_fbc=1`, sensores térmicos y ZRAM de 8 GB con ZSTD.
+- Configura APT sin recomendaciones ni sugerencias, NVMe con planificador `none` y UFW con denegación entrante.
+- Purga paquetes no usados para impresoras, módems y RPC en esta laptop sin puerto móvil.
 - Instala herramientas Vulkan, `udiskie`, Timeshift y utilidades de gráficos.
 - Elimina *bloatware* y deshabilita servicios innecesarios (`cups`, `rpcbind`, `ModemManager`).
 - Reconstruye el `initramfs` asegurando carga temprana expedita.

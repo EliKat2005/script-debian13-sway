@@ -28,6 +28,11 @@ install_pkg() {
 echo "--- 📡 Configurando Repositorios (Contrib / Non-Free) ---"
 SOURCES_FILE="/etc/apt/sources.list.d/debian.sources"
 
+cat > /etc/apt/apt.conf.d/99-minimal <<'EOF'
+APT::Install-Recommends "false";
+APT::Install-Suggests "false";
+EOF
+
 if [[ -f "$SOURCES_FILE" ]]; then
     cp "$SOURCES_FILE" "$SOURCES_FILE.bak_script"
     
@@ -48,6 +53,13 @@ echo "--- ⚡ PRE-CONFIGURACIÓN: Optimizaciones Hardware (Intel i7 / PCIe) ---"
 echo "options i915 enable_guc=3 enable_fbc=1" > /etc/modprobe.d/i915.conf
 rm -f /etc/modprobe.d/pcie_aspm.conf
 echo 'ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"' > /etc/udev/rules.d/90-backlight.rules
+cat > /etc/udev/rules.d/60-nvme-scheduler.rules <<'EOF'
+ACTION=="add|change", SUBSYSTEM=="block", KERNEL=="nvme*n*", ATTR{queue/scheduler}="none"
+EOF
+udevadm control --reload-rules
+if [[ -w /sys/block/nvme0n1/queue/scheduler ]]; then
+    echo none > /sys/block/nvme0n1/queue/scheduler
+fi
 
 echo "--- 🌡️ Optimizando Sensores Térmicos (Batería y Ventiladores Dell) ---"
 echo "coretemp" > /etc/modules-load.d/sensors.conf
@@ -60,7 +72,7 @@ apt update && apt -y full-upgrade
 install_pkg "FIRMWARE_KERNEL" "curl build-essential pkg-config libglib2.0-bin xdg-user-dirs unzip linux-headers-amd64 dkms firmware-linux-nonfree firmware-misc-nonfree firmware-atheros firmware-realtek firmware-sof-signed intel-microcode"
 
 # 3. Drivers Gráficos y Utilidades de Sistema
-install_pkg "DRIVERS_INTEL" "mesa-utils rfkill intel-media-va-driver-non-free intel-gpu-tools vainfo vulkan-tools"
+install_pkg "DRIVERS_INTEL" "mesa-utils rfkill intel-media-va-driver intel-gpu-tools vainfo vulkan-tools"
 install_pkg "UTILIDADES_SYS" "timeshift inotify-tools git make wf-recorder libnotify-bin lm-sensors ufw udiskie zram-tools"
 
 # 4. Entorno Sway (Core)
@@ -80,6 +92,9 @@ curl -fsS https://dl.brave.com/install.sh | sh
 
 # 8. Audio, Red y Energía
 install_pkg "AUDIO_RED" "brightnessctl pamixer playerctl btop nm-connection-editor blueman network-manager-gnome pipewire pipewire-pulse wireplumber pavucontrol libspa-0.2-bluetooth power-profiles-daemon fwupd thermald"
+
+# Retirar reglas persistentes heredadas que pueden contradecir UFW
+apt -y purge iptables-persistent netfilter-persistent 2>/dev/null || true
 
 # 9. Temas y Apariencia
 install_pkg "TEMAS_COMPAT" "fonts-inter fonts-jetbrains-mono fonts-font-awesome fonts-noto-color-emoji papirus-icon-theme arc-theme desktop-base dmz-cursor-theme qt5ct qt6ct qtwayland5 qt6-wayland gtk2-engines-murrine gtk2-engines-pixbuf"
@@ -175,11 +190,9 @@ ufw default deny incoming
 ufw default allow outgoing
 ufw enable
 
-# DESHABILITAR SERVICIOS BASURA (Clean Boot)
-echo "   Purgando servicios innecesarios (Impresoras, Modems, RPC)..."
-systemctl disable cups 2>/dev/null || true
-systemctl disable ModemManager 2>/dev/null || true
-systemctl disable rpcbind 2>/dev/null || true
+# ELIMINAR PAQUETES BASURA SIN USO EN ESTE PORTÁTIL
+echo "   Purgando soporte de impresoras, módems y RPC..."
+apt -y purge cups cups-daemon cups-browsed modemmanager rpcbind 2>/dev/null || true
 
 # PERMISOS DE USUARIO
 echo "--- 👥 Configurando Permisos de Usuario ---"

@@ -85,6 +85,7 @@ echo "options nvidia NVreg_PreserveVideoMemoryAllocations=1 NVreg_TemporaryFileP
 systemctl enable nvidia-suspend.service
 systemctl enable nvidia-hibernate.service
 systemctl enable nvidia-resume.service
+systemctl disable --now nvidia-persistenced.service 2>/dev/null || true
 
 # --- FASE 4: PARCHE SWAY ---
 
