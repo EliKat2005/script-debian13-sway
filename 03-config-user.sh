@@ -97,7 +97,7 @@ for_window [app_id="swayimg"] floating enable, move position center
 # ATAJOS
 bindsym \$mod+Return exec \$term
 bindsym \$mod+space exec \$menu
-bindsym \$mod+w exec sh -c 'command -v brave-origin >/dev/null && exec brave-origin || exec brave-browser'
+bindsym \$mod+w exec brave-origin
 bindsym \$mod+f exec thunar
 bindsym \$mod+p exec wdisplays
 bindsym \$mod+d exec gnome-disks

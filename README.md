@@ -15,7 +15,7 @@ Una arquitectura de instalación y configuración sumamente robusta, moderna y p
 - **Gestión Térmica Especializada (Dell/Intel):** Integración profunda con `thermald`, `coretemp` y `dell-smm-hwmon` para prevenir el *thermal throttling* en procesadores Intel (i7 Whiskey Lake) y gestionar los ventiladores de forma natural.
 - **Armonía visual GTK:** Las aplicaciones GTK siguen el tema maestro `Arc-Dark` con iconos `Papirus-Dark`. No se instalan integraciones Qt porque no hay aplicaciones Qt principales en este escritorio.
 - **Terminal Foot:** Foot es la única terminal instalada, configurada con fondo opaco, JetBrains Mono y el mismo estilo visual solicitado.
-- **Herramientas GTK ligeras:** La calculadora usa `galculator` sobre GTK3/Wayland y la gestión segura de discos usa `gnome-disk-utility` sobre GTK3/Wayland y UDisks. GParted no se instala porque requiere elevar privilegios con pkexec y pierde el contexto gráfico en Wayland.
+- **Herramientas GTK ligeras:** La calculadora usa `galculator` sobre GTK3/Wayland y la gestión segura de discos usa `gnome-disk-utility` sobre GTK3/Wayland y UDisks.
 
 ---
 
