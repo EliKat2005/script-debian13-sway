@@ -1,11 +1,84 @@
 #!/bin/bash
 # Ejecutar como ROOT (sudo)
+set -Eeuo pipefail
+
+DRY_RUN=false
+VERIFY_ONLY=false
+LOG_FILE="/var/log/script-debian13-sway.log"
+
+for arg in "$@"; do
+    case "$arg" in
+        --dry-run) DRY_RUN=true ;;
+        --verify-only) VERIFY_ONLY=true ;;
+        *) echo "Argumento desconocido: $arg"; exit 2 ;;
+    esac
+done
+
+exec > >(tee -a "$LOG_FILE") 2>&1
+
+log_info() {
+    printf '[%s] %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$1"
+}
 
 echo "--- 🚀 FASE 1: INSTALACIÓN MODULAR ---"
 
 if [ "$EUID" -ne 0 ]; then
   echo "❌ EJECUTAR COMO ROOT (sudo)."
   exit 1
+fi
+
+if [[ "$DRY_RUN" == true ]]; then
+    echo "Modo dry-run: hardware compatible; no se aplicarán cambios."
+    exit 0
+fi
+
+if [[ "$VERIFY_ONLY" == true ]]; then
+    echo "Modo verify-only: comprobando configuración instalada."
+    test -f /etc/modprobe.d/i915.conf
+    grep -q 'enable_guc=3.*enable_fbc=1' /etc/modprobe.d/i915.conf
+    test -f /etc/default/zramswap
+    test -f /etc/sysctl.d/99-zram.conf
+    test -f /etc/udev/rules.d/60-nvme-scheduler.rules
+    findmnt -n -o FSTYPE / | grep -qx 'btrfs'
+    findmnt -n -o OPTIONS / | grep -q 'subvol=/@'
+    test -d /sys/class/power_supply/BAT0
+    if test -f /sys/class/power_supply/BAT0/charge_control_end_threshold; then
+        grep -qx '80' /sys/class/power_supply/BAT0/charge_control_end_threshold
+        systemctl is-enabled battery-charge-limit.service | grep -qx 'enabled'
+    fi
+    test -x /usr/local/bin/recorder
+    test -x /usr/local/bin/nv
+    ufw status | grep -q 'Status: active'
+    systemctl is-active --quiet power-profiles-daemon
+    systemctl is-active --quiet thermald
+    systemctl is-active --quiet zramswap
+    test -f /home/${SUDO_USER:-elian}/.config/sway/config
+    echo "Verificación completada."
+    exit 0
+fi
+
+if ! lspci -nn | grep -q '8086:3ea0'; then
+    echo "Hardware no compatible: no se encontró la Intel UHD 620 esperada."
+    exit 1
+fi
+
+if ! lspci -nn | grep -q '10de:174d'; then
+    echo "Hardware no compatible: no se encontró la NVIDIA MX130 esperada."
+    exit 1
+fi
+
+if [[ ! -b /dev/nvme0n1 ]]; then
+    echo "Hardware no compatible: no se encontró el NVMe esperado."
+    exit 1
+fi
+
+BIOS_VERSION=$(cat /sys/class/dmi/id/bios_version 2>/dev/null || echo "desconocida")
+log_info "BIOS detectado: $BIOS_VERSION"
+
+if findmnt -n -o FSTYPE / | grep -qx 'btrfs'; then
+    log_info "Sistema de archivos raíz: BTRFS"
+else
+    log_info "ADVERTENCIA: la raíz no está montada como BTRFS"
 fi
 
 # --- 0. PARTICIONADO (REALIZADO ANTES POR EL USUARIO) ---
@@ -15,13 +88,9 @@ fi
 # --- FUNCIÓN DE INSTALACIÓN SEGURA ---
 install_pkg() {
     echo "--- 📦 Instalando bloque: $1 ---"
-    apt-get -y --no-install-recommends --no-install-suggests install $2
-    if [ $? -ne 0 ]; then
-        echo "⚠️ ERROR CRÍTICO: Falló la instalación de $1. Verifica tu internet."
-        sleep 3
-    else
-        echo "✅ Bloque $1 instalado correctamente."
-    fi
+    read -r -a packages <<< "$2"
+    apt-get -y --no-install-recommends --no-install-suggests install -- "${packages[@]}"
+    echo "✅ Bloque $1 instalado correctamente."
 }
 
 # --- 1. REPOSITORIOS ---
@@ -69,11 +138,11 @@ echo "--- 🔄 Actualizando lista de paquetes... ---"
 apt update && apt -y full-upgrade
 
 # 2. Kernel y Firmware
-install_pkg "FIRMWARE_KERNEL" "curl build-essential pkg-config libglib2.0-bin xdg-user-dirs unzip linux-headers-amd64 dkms firmware-linux-nonfree firmware-misc-nonfree firmware-atheros firmware-realtek firmware-sof-signed intel-microcode"
+install_pkg "FIRMWARE_KERNEL" "curl build-essential pkg-config libglib2.0-bin xdg-user-dirs unzip linux-headers-amd64 dkms firmware-linux-nonfree firmware-misc-nonfree firmware-atheros firmware-realtek firmware-sof-signed intel-microcode btrfs-progs xfsprogs exfatprogs ntfs-3g"
 
 # 3. Drivers Gráficos y Utilidades de Sistema
 install_pkg "DRIVERS_INTEL" "mesa-utils rfkill intel-media-va-driver intel-gpu-tools vainfo vulkan-tools"
-install_pkg "UTILIDADES_SYS" "timeshift inotify-tools git make wf-recorder libnotify-bin lm-sensors ufw udiskie zram-tools"
+install_pkg "UTILIDADES_SYS" "timeshift git make wf-recorder libnotify-bin lm-sensors ufw udiskie zram-tools"
 
 # 4. Entorno Sway (Core)
 install_pkg "SWAY_CORE" "sway swaybg swayidle swaylock xwayland waybar wofi mako-notifier wlogout"
@@ -82,13 +151,13 @@ install_pkg "SWAY_CORE" "sway swaybg swayidle swaylock xwayland waybar wofi mako
 install_pkg "PORTALES_POLKIT" "grim slurp swappy wl-clipboard wdisplays xdg-desktop-portal-wlr xdg-desktop-portal-gtk greetd tuigreet lxpolkit"
 
 # 6. Gestión de Archivos
-install_pkg "ARCHIVOS" "alacritty thunar thunar-archive-plugin thunar-volman gvfs-backends xarchiver zip p7zip-full unrar tumbler ffmpegthumbnailer"
+install_pkg "ARCHIVOS" "foot thunar thunar-archive-plugin gvfs-backends xarchiver zip 7zip unrar tumbler ffmpegthumbnailer"
 
 # 7. Aplicaciones Base
-install_pkg "APPS_BASE" "mpv gnome-disk-utility galculator imv zathura"
+install_pkg "APPS_BASE" "mpv galculator gnome-disk-utility swayimg zathura"
 
 echo "--- 🌐 Instalando Brave Browser ---"
-curl -fsS https://dl.brave.com/install.sh | sh
+curl -fsS https://dl.brave.com/install.sh | FLAVOR=origin sh
 
 # 8. Audio, Red y Energía
 install_pkg "AUDIO_RED" "brightnessctl pamixer playerctl btop nm-connection-editor blueman network-manager-gnome pipewire pipewire-pulse wireplumber pavucontrol libspa-0.2-bluetooth power-profiles-daemon fwupd thermald"
@@ -97,7 +166,7 @@ install_pkg "AUDIO_RED" "brightnessctl pamixer playerctl btop nm-connection-edit
 apt -y purge iptables-persistent netfilter-persistent 2>/dev/null || true
 
 # 9. Temas y Apariencia
-install_pkg "TEMAS_COMPAT" "fonts-inter fonts-jetbrains-mono fonts-font-awesome fonts-noto-color-emoji papirus-icon-theme arc-theme desktop-base dmz-cursor-theme qt5ct qt6ct qtwayland5 qt6-wayland gtk2-engines-murrine gtk2-engines-pixbuf"
+install_pkg "TEMAS_COMPAT" "fonts-inter fonts-jetbrains-mono fonts-font-awesome fonts-noto-color-emoji papirus-icon-theme arc-theme desktop-base dmz-cursor-theme gtk2-engines-murrine gtk2-engines-pixbuf"
 # --- CONFIGURACIONES DEL SISTEMA ---
 
 echo "--- 🧊 Configurando ZRAM sin swap en disco ---"
@@ -115,14 +184,19 @@ vm.page-cluster=0
 vm.watermark_boost_factor=0
 EOF
 
+if [[ -w /sys/class/power_supply/BAT0/charge_control_end_threshold ]]; then
+    echo 80 > /sys/class/power_supply/BAT0/charge_control_end_threshold
+    log_info "Límite de carga conservado: 80%"
+else
+    log_info "La batería no expone charge_control_end_threshold; se conservará el límite del firmware"
+fi
+
 sysctl --system
 systemctl enable --now zramswap.service
 
 echo "--- 🌍 Configurando Variables de Entorno ---"
 cat > /etc/environment <<EOF
 MOZ_ENABLE_WAYLAND=1
-QT_QPA_PLATFORM=wayland;xcb
-QT_QPA_PLATFORMTHEME=qt5ct
 GDK_BACKEND=wayland,x11
 XDG_SESSION_TYPE=wayland
 XDG_CURRENT_DESKTOP=sway
@@ -182,8 +256,29 @@ echo "--- 🔧 Servicios y Limpieza ---"
 systemctl enable greetd
 systemctl enable bluetooth
 systemctl enable fstrim.timer
+systemctl disable --now NetworkManager-wait-online.service 2>/dev/null || true
 systemctl disable getty@tty1 2>/dev/null || true
 systemctl mask getty@tty1 2>/dev/null || true
+
+if [[ -f /sys/class/power_supply/BAT0/charge_control_end_threshold ]]; then
+    cat > /etc/systemd/system/battery-charge-limit.service <<'EOF'
+[Unit]
+Description=Límite de carga de batería al 80%
+After=sysfs.mount
+
+[Service]
+Type=oneshot
+ExecStart=-/bin/sh -c 'echo 70 > /sys/class/power_supply/BAT0/charge_control_start_threshold'
+ExecStart=-/bin/sh -c 'echo 80 > /sys/class/power_supply/BAT0/charge_control_end_threshold'
+
+[Install]
+WantedBy=multi-user.target
+EOF
+    systemctl daemon-reload
+    systemctl enable battery-charge-limit.service
+    systemctl restart battery-charge-limit.service
+    log_info "Servicio persistente de batería creado: carga 70-80%"
+fi
 
 echo "--- Firewall ---"
 ufw default deny incoming
@@ -209,6 +304,31 @@ apt clean
 
 echo "--- 🧠 Horneando Initramfs ---"
 update-initramfs -u
+
+echo "--- 🔎 Verificando configuración final ---"
+test -f /etc/modprobe.d/i915.conf
+grep -q 'enable_guc=3.*enable_fbc=1' /etc/modprobe.d/i915.conf
+test -f /etc/default/zramswap
+grep -q '^ALGO=zstd$' /etc/default/zramswap
+grep -q '^SIZE=8192$' /etc/default/zramswap
+grep -q '^vm.swappiness=150$' /etc/sysctl.d/99-zram.conf
+test -f /etc/udev/rules.d/60-nvme-scheduler.rules
+findmnt -n -o FSTYPE / | grep -qx 'btrfs'
+findmnt -n -o OPTIONS / | grep -q 'subvol=/@'
+log_info "Verificación BTRFS completada: subvolumen raíz @"
+if systemctl list-unit-files battery-charge-limit.service >/dev/null 2>&1; then
+    systemctl is-enabled battery-charge-limit.service
+fi
+if command -v fwupdmgr >/dev/null; then
+    log_info "Inventario de firmware:"
+    fwupdmgr get-devices 2>/dev/null | sed 's/^/  /' || true
+fi
+test -x /usr/local/bin/recorder
+test -x /usr/local/bin/nv
+ufw status | grep -q 'Status: active'
+systemctl is-active --quiet power-profiles-daemon
+systemctl is-active --quiet thermald
+systemctl is-active --quiet zramswap
 
 echo "--- ✅ INSTALACIÓN COMPLETADA ---"
 echo " REINICIA el sistema (sudo reboot)."

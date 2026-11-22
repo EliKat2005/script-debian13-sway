@@ -1,5 +1,6 @@
 #!/bin/bash
 # Ejecutar como USUARIO NORMAL (NO SUDO).
+set -Eeuo pipefail
 
 echo "--- 🎨 FASE 3: PERSONALIZACIÓN ---"
 
@@ -13,7 +14,7 @@ USER_HOME=$HOME
 # 1. Directorios y Carpetas Base
 echo "--- 📁 Asegurando estructura de carpetas ---"
 xdg-user-dirs-update --force
-mkdir -p "$USER_HOME/.config"/{sway,waybar,wofi,mako,alacritty,xdg-desktop-portal,qt5ct,qt6ct}
+mkdir -p "$USER_HOME/.config"/{sway,waybar,wofi,mako,foot,xdg-desktop-portal}
 
 # 2. Configuración Global de Perfil (Nano Default)
 if ! grep -q "export EDITOR=nano" "$USER_HOME/.profile"; then
@@ -34,7 +35,7 @@ cat <<EOF > "$USER_HOME/.config/sway/config"
 
 # VARIABLES
 set \$mod Mod4
-set \$term alacritty
+set \$term foot
 set \$menu wofi --show drun --allow-images --no-custom
 
 # FUENTE
@@ -83,14 +84,15 @@ exec swayidle -w timeout 300 'swaymsg "output * power off"' resume 'swaymsg "out
 
 # REGLAS FLOTANTES
 for_window [app_id="galculator"] floating enable, resize set 350 500, move position center
+for_window [app_id="gnome-disks"] floating enable, resize set 900 650, move position center
 for_window [app_id="pavucontrol"] floating enable
 for_window [app_id="blueman-manager"] floating enable
 for_window [app_id="nm-connection-editor"] floating enable
 for_window [app_id="wdisplays"] floating enable
 for_window [app_id="lxpolkit"] floating enable
 for_window [title="File Operation Progress"] floating enable
-# IMV flotante y centrado
-for_window [app_id="imv"] floating enable, move position center
+# SWAYIMG flotante y centrado
+for_window [app_id="swayimg"] floating enable, move position center
 
 # ATAJOS
 bindsym \$mod+Return exec \$term
@@ -98,6 +100,7 @@ bindsym \$mod+space exec \$menu
 bindsym \$mod+w exec sh -c 'command -v brave-origin >/dev/null && exec brave-origin || exec brave-browser'
 bindsym \$mod+f exec thunar
 bindsym \$mod+p exec wdisplays
+bindsym \$mod+d exec gnome-disks
 
 # GRABACIÓN
 bindsym \$mod+Shift+r exec recorder
@@ -162,33 +165,23 @@ bindsym XF86MonBrightnessUp exec brightnessctl --device='intel_backlight' set +5
 bindsym XF86MonBrightnessDown exec brightnessctl --device='intel_backlight' set 5%- -n 1
 EOF
 
-# 5. Configuración ALACRITTY
-cat <<EOF > "$USER_HOME/.config/alacritty/alacritty.toml"
-[font]
-size = 11.0
-normal = { family = "JetBrains Mono", style = "Regular" }
-offset = { x = 0, y = 4 } # Añade interlineado extra para mejor lectura
+# 5. Configuración FOOT
+cat <<EOF > "$USER_HOME/.config/foot/foot.ini"
+[main]
+font=JetBrains Mono:size=11
+pad=24x24
 
-[window]
-opacity = 1.0
-padding = { x = 24, y = 24 } # Margen interno generoso para no asfixiar el texto
-decorations = "None"
-dynamic_title = true
-
-[colors.primary]
-background = "#181818" # Un tono de oscuridad más profundo y elegante
-foreground = "#e0e0e0" # Blanco roto para reducir la fatiga visual
-
-# Paleta base para que 'ls' y comandos tengan colores armónicos
-[colors.normal]
-black   = "#181818"
-red     = "#ff5555"
-green   = "#26A65B"
-yellow  = "#ffeb3b"
-blue    = "#00BCD4"
-magenta = "#b388ff"
-cyan    = "#84ffff"
-white   = "#e0e0e0"
+[colors]
+background=181818
+foreground=e0e0e0
+regular0=181818
+regular1=ff5555
+regular2=26A65B
+regular3=ffeb3b
+regular4=00BCD4
+regular5=b388ff
+regular6=84ffff
+regular7=e0e0e0
 EOF
 
 # 6. Asociaciones de Archivos (Mimeapps)
@@ -196,13 +189,13 @@ echo "--- 📄 Asociando aplicaciones por defecto ---"
 mkdir -p "$USER_HOME/.config"
 cat <<EOF > "$USER_HOME/.config/mimeapps.list"
 [Default Applications]
-image/jpeg=imv.desktop
-image/png=imv.desktop
-image/gif=imv.desktop
-image/webp=imv.desktop
+image/jpeg=swayimg.desktop
+image/png=swayimg.desktop
+image/gif=swayimg.desktop
+image/webp=swayimg.desktop
 application/pdf=org.pwmt.zathura.desktop
 inode/directory=thunar.desktop
-text/plain=Alacritty.desktop
+text/plain=vim.desktop
 EOF
 
 # 7. Waybar y Scripts
@@ -240,8 +233,8 @@ cat <<EOF > "$USER_HOME/.config/waybar/config"
     "modules-right": ["pulseaudio", "network", "cpu", "memory", "custom/power", "battery", "tray"],
     "sway/workspaces": { "disable-scroll": true, "format": "{name}" },
     "clock": { "format": " {:%H:%M   %d/%m}", "tooltip-format": "<big>{:%Y %B}</big>\n<tt>{calendar}</tt>" },
-    "cpu": { "format": " {usage}%" },
-    "memory": { "format": " {}%" },
+    "cpu": { "interval": 5, "format": " {usage}%" },
+    "memory": { "interval": 10, "format": " {}%" },
     "network": { "format-wifi": " {essid}", "format-ethernet": "", "format-disconnected": "⚠", "tooltip-format": "{essid} ({signalStrength}%)" },
     "pulseaudio": { "format": "{icon} {volume}%", "format-muted": "🔇 {volume}%", "format-icons": { "default": ["", "", ""] }, "on-click": "pavucontrol" },
     "battery": { 
@@ -337,9 +330,7 @@ gpu-context=wayland
 
 # --- RENDIMIENTO Y BATERÍA ---
 # Activar decodificación por hardware (Intel VAAPI)
-hwdec=auto
-# Perfil optimizado para evitar desincronización de audio/video
-profile=fast
+hwdec=vaapi
 EOF
 
 # 10. CONFIGURACIÓN AUTOMÁTICA DE TEMAS
@@ -348,24 +339,6 @@ gsettings set org.gnome.desktop.interface gtk-theme 'Arc-Dark'
 gsettings set org.gnome.desktop.interface icon-theme 'Papirus-Dark'
 gsettings set org.gnome.desktop.interface cursor-theme 'DMZ-White'
 gsettings set org.gnome.desktop.interface color-scheme 'prefer-dark'
-
-# Auto-configurar QT5CT para usar GTK2
-mkdir -p "$USER_HOME/.config/qt5ct"
-cat <<EOF > "$USER_HOME/.config/qt5ct/qt5ct.conf"
-[Appearance]
-icon_theme=Papirus-Dark
-standard_dialogs=gtk2
-style=gtk2
-EOF
-
-# Auto-configurar QT6CT
-mkdir -p "$USER_HOME/.config/qt6ct"
-cat <<EOF > "$USER_HOME/.config/qt6ct/qt6ct.conf"
-[Appearance]
-icon_theme=Papirus-Dark
-standard_dialogs=gtk2
-style=gtk2
-EOF
 
 # 11. Limpieza
 systemctl --user mask evolution-source-registry.service

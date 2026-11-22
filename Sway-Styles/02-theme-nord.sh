@@ -11,32 +11,23 @@ sed -i -E 's/^default_border .*/default_border pixel 2/' "$USER_HOME/.config/swa
 sed -i -E 's/^gaps inner .*/gaps inner 10/' "$USER_HOME/.config/sway/config"
 sed -i -E 's|^output \* bg .*|output * bg /usr/share/images/desktop-base/default fill|' "$USER_HOME/.config/sway/config"
 
-# 2. Alacritty
-cat << 'EOF' > "$USER_HOME/.config/alacritty/alacritty.toml"
-[font]
-size = 11.0
-normal = { family = "JetBrains Mono", style = "Regular" }
-offset = { x = 0, y = 4 }
+# 2. Foot
+cat << 'EOF' > "$USER_HOME/.config/foot/foot.ini"
+[main]
+font=JetBrains Mono:size=11
+pad=24x24
 
-[window]
-opacity = 1.0
-padding = { x = 24, y = 24 }
-decorations = "None"
-dynamic_title = true
-
-[colors.primary]
-background = "#2e3440"
-foreground = "#eceff4"
-
-[colors.normal]
-black   = "#3b4252"
-red     = "#bf616a"
-green   = "#a3be8c"
-yellow  = "#ebcb8b"
-blue    = "#81a1c1"
-magenta = "#b48ead"
-cyan    = "#88c0d0"
-white   = "#e5e9f0"
+[colors]
+background=2e3440
+foreground=eceff4
+regular0=3b4252
+regular1=bf616a
+regular2=a3be8c
+regular3=ebcb8b
+regular4=81a1c1
+regular5=b48ead
+regular6=88c0d0
+regular7=e5e9f0
 EOF
 
 # 3. Waybar CSS

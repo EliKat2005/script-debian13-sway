@@ -5,11 +5,17 @@ Una arquitectura de instalación y configuración sumamente robusta, moderna y p
 ## 🌟 Características Principales
 
 - **Wayland prioritario con compatibilidad:** Sway usa Wayland nativamente y mantiene XWayland habilitado para aplicaciones compatibles que todavía requieren X11.
+- **Navegador Brave Origin:** Instala la variante oficial `origin` mediante el instalador publicado por Brave.
 - **Gráficos Híbridos Inteligentes (Nvidia Prime Offload):** Configurado para que Sway se ejecute nativamente sobre la gráfica integrada (Intel UHD 620) maximizando la batería. La GPU dedicada (Nvidia MX130 Maxwell) se mantiene en reposo (D3cold/Offload) y solo se invoca usando el wrapper `nv` (ej. `nv blender`).
 - **BTRFS preparado manualmente + Timeshift:** La raíz BTRFS y el subvolumen `@` se crean durante el particionado manual de la instalación Netinstall. Los scripts no modifican particiones ni subvolúmenes.
 - **ZRAM sin swap en disco:** Instala `zram-tools`, crea un dispositivo ZSTD de 8 GB y configura prioridad 100 con `swappiness=150`.
+- **Batería protegida:** Configura carga entre 70% y 80% cuando el firmware Dell expone los controles correspondientes.
+- **Arranque optimizado:** Desactiva `NetworkManager-wait-online`, conserva el perfil CPU automático y verifica BTRFS/subvolumen `@`.
+- **CPU automático:** El perfil de CPU lo gestiona `power-profiles-daemon`/`intel_pstate`; el script no fuerza un governor fijo.
 - **Gestión Térmica Especializada (Dell/Intel):** Integración profunda con `thermald`, `coretemp` y `dell-smm-hwmon` para prevenir el *thermal throttling* en procesadores Intel (i7 Whiskey Lake) y gestionar los ventiladores de forma natural.
-- **Armonía Visual Global:** Todas las aplicaciones (sean GTK o QT) siguen el tema maestro `Arc-Dark` con iconos `Papirus-Dark` gracias al puente nativo de variables de entorno y `qt5ct`/`qt6ct`.
+- **Armonía visual GTK:** Las aplicaciones GTK siguen el tema maestro `Arc-Dark` con iconos `Papirus-Dark`. No se instalan integraciones Qt porque no hay aplicaciones Qt principales en este escritorio.
+- **Terminal Foot:** Foot es la única terminal instalada, configurada con fondo opaco, JetBrains Mono y el mismo estilo visual solicitado.
+- **Herramientas GTK ligeras:** La calculadora usa `galculator` sobre GTK3/Wayland y la gestión segura de discos usa `gnome-disk-utility` sobre GTK3/Wayland y UDisks. GParted no se instala porque requiere elevar privilegios con pkexec y pierde el contexto gráfico en Wayland.
 
 ---
 
@@ -24,6 +30,7 @@ El proyecto está dividido en tres comandos secuenciales para garantizar un desp
 - Configura APT sin recomendaciones ni sugerencias, NVMe con planificador `none` y UFW con denegación entrante.
 - Purga paquetes no usados para impresoras, módems y RPC en esta laptop sin puerto móvil.
 - Instala herramientas Vulkan, `udiskie`, Timeshift y utilidades de gráficos.
+- Instala `7zip`, `galculator`, `gnome-disk-utility`, BTRFS/XFS/exFAT/NTFS y retira componentes GTK/Qt heredados que no usa el entorno.
 - Elimina *bloatware* y deshabilita servicios innecesarios (`cups`, `rpcbind`, `ModemManager`).
 - Reconstruye el `initramfs` asegurando carga temprana expedita.
 
@@ -35,7 +42,7 @@ El proyecto está dividido en tres comandos secuenciales para garantizar un desp
 ### 3. `03-config-user.sh` (Interfaz y Entorno de Usuario)
 - **Ejecutar SIN SUDO (Usuario normal).**
 - Configura parámetros crudos del compositor **SwayWM**.
-- Genera archivos de configuración limpios para terminal (Alacritty), barra de estado interactiva (Waybar), notificadores (Mako) y lanzadores (Wofi).
+- Genera archivos de configuración limpios para terminal (Foot), barra de estado interactiva (Waybar), notificadores (Mako) y lanzadores (Wofi).
 
 ---
 
@@ -80,7 +87,7 @@ sudo reboot
 
 ## ⌨️ Atajos de Teclado Destacados
 
-- `Win + Enter` : Abrir Terminal (Alacritty)
+- `Win + Enter` : Abrir Terminal (Foot)
 - `Win + Espacio`: Abrir Menú (Wofi)
 - `Win + W` : Navegador (Brave)
 - `Win + F` : Gestor de Archivos (Thunar)

@@ -1,6 +1,14 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+DRY_RUN=false
+for arg in "$@"; do
+    case "$arg" in
+        --dry-run) DRY_RUN=true ;;
+        *) echo "Argumento desconocido: $arg"; exit 2 ;;
+    esac
+done
+
 # -----------------------------------------------------------------------------
 # NVIDIA SETUP FOR DEBIAN 13
 # -----------------------------------------------------------------------------
@@ -10,6 +18,16 @@ log(){ echo -e "\n\033[1;36m[+] $1\033[0m"; }
 if [[ $EUID -ne 0 ]]; then
    echo "❌ Ejecuta con sudo."
    exit 1
+fi
+
+if [[ "$DRY_RUN" == true ]]; then
+    echo "Modo dry-run: NVIDIA MX130 compatible."
+    exit 0
+fi
+
+if ! lspci -nn | grep -q '10de:174d'; then
+    echo "Hardware no compatible: no se encontró la NVIDIA MX130 esperada."
+    exit 1
 fi
 
 # --- FASE 0: ARREGLO DE REPOSITORIOS ---
