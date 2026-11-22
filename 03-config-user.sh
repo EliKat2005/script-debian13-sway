@@ -36,7 +36,7 @@ cat <<EOF > "$USER_HOME/.config/sway/config"
 # VARIABLES
 set \$mod Mod4
 set \$term foot
-set \$menu wofi --show drun --allow-images --no-custom
+set \$menu wofi --show drun --allow-images
 
 # FUENTE
 font pango:Inter 11
@@ -169,7 +169,7 @@ EOF
 cat <<EOF > "$USER_HOME/.config/foot/foot.ini"
 [main]
 font=JetBrains Mono:size=11
-pad=24x24
+pad=18x18
 
 [colors]
 background=181818
