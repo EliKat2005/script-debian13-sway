@@ -6,11 +6,11 @@ Una arquitectura de instalación y configuración sumamente robusta, moderna y p
 
 - **Wayland prioritario con compatibilidad:** Sway usa Wayland nativamente y mantiene XWayland habilitado para aplicaciones compatibles que todavía requieren X11.
 - **Navegador Brave Origin:** Instala la variante oficial `origin` mediante el instalador publicado por Brave.
-- **Gráficos Híbridos Inteligentes (Nvidia Prime Offload):** Configurado para que Sway se ejecute nativamente sobre la gráfica integrada (Intel UHD 620) maximizando la batería. La GPU dedicada (Nvidia MX130 Maxwell) usa gestión dinámica de energía y solo se invoca usando el wrapper `nv` (ej. `nv blender`); el estado D3 real depende del soporte ACPI/firmware del Inspiron.
+- **Gráficos Híbridos Inteligentes (Nvidia Prime Offload):** Sway se ejecuta sobre la gráfica integrada Intel UHD 620 para maximizar la batería. La NVIDIA MX130 usa gestión dinámica de energía y se invoca mediante el wrapper `nv` (ej. `nv blender`). El estado D3 real depende del firmware/ACPI del Inspiron.
 - **BTRFS preparado manualmente + Timeshift:** La raíz BTRFS y el subvolumen `@` se crean durante el particionado manual de la instalación Netinstall. Los scripts no modifican particiones ni subvolúmenes.
 - **ZRAM sin swap en disco:** Instala `zram-tools`, crea un dispositivo ZSTD de 8 GB y configura prioridad 100 con `swappiness=150`.
 - **Batería protegida:** Configura carga entre 70% y 80% cuando el firmware Dell expone los controles correspondientes.
-- **Arranque optimizado:** Desactiva `NetworkManager-wait-online`, conserva el perfil CPU automático y verifica BTRFS/subvolumen `@`.
+- **Arranque optimizado:** Habilita `nvidia-drm.modeset=1` para KMS de Wayland, desactiva `NetworkManager-wait-online`, conserva el perfil CPU automático y verifica BTRFS/subvolumen `@`.
 - **CPU automático:** El perfil de CPU lo gestiona `power-profiles-daemon`/`intel_pstate`; el script no fuerza un governor fijo.
 - **Gestión Térmica Especializada (Dell/Intel):** Integración profunda con `thermald`, `coretemp` y `dell-smm-hwmon` para prevenir el *thermal throttling* en procesadores Intel (i7 Whiskey Lake) y gestionar los ventiladores de forma natural.
 - **Armonía visual GTK:** Las aplicaciones GTK siguen el tema maestro `Arc-Dark` con iconos `Papirus-Dark`. No se instalan integraciones Qt porque no hay aplicaciones Qt principales en este escritorio.
@@ -26,8 +26,8 @@ El proyecto está dividido en tres comandos secuenciales para garantizar un desp
 ### 1. `01-system-base.sh` (Kernel, Sistema BTRFS y Dependencias)
 - **Requiere SUDO.**
 - No modifica particiones ni sistemas de archivos; el particionado BTRFS/XFS se realiza manualmente durante la instalación de Debian.
-- Configura `i915 enable_guc=3 enable_fbc=1`, sensores térmicos y ZRAM de 8 GB con ZSTD.
-- Configura APT sin recomendaciones ni sugerencias, NVMe con planificador `none` y UFW con denegación entrante.
+- Configura `i915 enable_fbc=1`, sensores térmicos y ZRAM de 8 GB con ZSTD. En esta UHD 620, el kernel informa que GuC submission no está disponible, por lo que no se fuerza `enable_guc=3`.
+- Configura APT sin recomendaciones ni sugerencias y selecciona el planificador `none` para discos SSD no rotacionales SATA/M.2 SATA o NVMe. No exige que el disco del sistema sea NVMe.
 - Purga paquetes no usados para impresoras, módems y RPC en esta laptop sin puerto móvil.
 - Instala herramientas Vulkan, `udiskie`, Timeshift y utilidades de gráficos.
 - Instala `7zip`, `galculator`, `gnome-disk-utility`, BTRFS/XFS/exFAT/NTFS y retira componentes GTK/Qt heredados que no usa el entorno.
@@ -37,7 +37,7 @@ El proyecto está dividido en tres comandos secuenciales para garantizar un desp
 ### 2. `02-script-nvidia-offload.sh` (Gestión de GPU Híbrida)
 - **Requiere SUDO.**
 - Instala drivers propietarios y `linux-headers-amd64` vía `dkms` para actualizaciones automáticas ante cambios del kernel de Debian.
-- Conserva el arranque limpio: evita modosets forzados, elimina `pci=noaer` si existiera y prepara Sway para iniciar sin pánico de GPU.
+- Habilita KMS con `nvidia-drm.modeset=1`, elimina `pci=noaer` si existiera y ajusta greetd para iniciar Sway con `--unsupported-gpu`. Sway continúa usando Intel como GPU principal; el argumento evita el fallo de inicio que puede producir el driver NVIDIA propietario presente.
 
 ### 3. `03-config-user.sh` (Interfaz y Entorno de Usuario)
 - **Ejecutar SIN SUDO (Usuario normal).**

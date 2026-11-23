@@ -35,10 +35,10 @@ fi
 if [[ "$VERIFY_ONLY" == true ]]; then
     echo "Modo verify-only: comprobando configuración instalada."
     test -f /etc/modprobe.d/i915.conf
-    grep -q 'enable_guc=3.*enable_fbc=1' /etc/modprobe.d/i915.conf
+    grep -q '^options i915 enable_fbc=1$' /etc/modprobe.d/i915.conf
     test -f /etc/default/zramswap
     test -f /etc/sysctl.d/99-zram.conf
-    test -f /etc/udev/rules.d/60-nvme-scheduler.rules
+    test -f /etc/udev/rules.d/60-ssd-scheduler.rules
     findmnt -n -o FSTYPE / | grep -qx 'btrfs'
     findmnt -n -o OPTIONS / | grep -q 'subvol=/@'
     test -d /sys/class/power_supply/BAT0
@@ -63,11 +63,6 @@ if ! lspci -nn | grep -q '10de:174d'; then
     echo "Hardware no compatible: no se encontró la NVIDIA MX130 esperada."
     exit 1
 fi
-
-#if [[ ! -b /dev/nvme0n1 ]]; then
-#    echo "Hardware no compatible: no se encontró el NVMe esperado."
-#    exit 1
-#fi
 
 BIOS_VERSION=$(cat /sys/class/dmi/id/bios_version 2>/dev/null || echo "desconocida")
 log_info "BIOS detectado: $BIOS_VERSION"
@@ -127,16 +122,21 @@ elif [[ -f "/etc/apt/sources.list" ]]; then
 fi
 
 echo "--- ⚡ PRE-CONFIGURACIÓN: Optimizaciones Hardware (Intel i7 / PCIe) ---"
-echo "options i915 enable_guc=3 enable_fbc=1" > /etc/modprobe.d/i915.conf
+# Coffee Lake/UHD 620 carga el firmware GuC/HuC, pero este kernel no admite
+# GuC submission en este dispositivo; se conserva únicamente FBC.
+echo "options i915 enable_fbc=1" > /etc/modprobe.d/i915.conf
 rm -f /etc/modprobe.d/pcie_aspm.conf
 echo 'ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"' > /etc/udev/rules.d/90-backlight.rules
-cat > /etc/udev/rules.d/60-nvme-scheduler.rules <<'EOF'
-ACTION=="add", SUBSYSTEM=="block", KERNEL=="nvme0n1", ATTR{queue/scheduler}="none"
+cat > /etc/udev/rules.d/60-ssd-scheduler.rules <<'EOF'
+ACTION=="add", SUBSYSTEM=="block", KERNEL=="sd*|nvme[0-9]*n[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="none"
 EOF
 udevadm control --reload-rules
-if [[ -w /sys/block/nvme0n1/queue/scheduler ]]; then
-    echo none > /sys/block/nvme0n1/queue/scheduler
-fi
+for block_device in /sys/block/sd* /sys/block/nvme*; do
+    [[ -w "$block_device/queue/scheduler" ]] || continue
+    [[ "$(cat "$block_device/queue/rotational")" == "0" ]] || continue
+    grep -qw none "$block_device/queue/scheduler" || continue
+    echo none > "$block_device/queue/scheduler"
+done
 
 echo "--- 🌡️ Optimizando Sensores Térmicos (Batería y Ventiladores Dell) ---"
 echo "coretemp" > /etc/modules-load.d/sensors.conf
@@ -320,12 +320,12 @@ update-initramfs -u
 
 echo "--- 🔎 Verificando configuración final ---"
 test -f /etc/modprobe.d/i915.conf
-grep -q 'enable_guc=3.*enable_fbc=1' /etc/modprobe.d/i915.conf
+grep -q '^options i915 enable_fbc=1$' /etc/modprobe.d/i915.conf
 test -f /etc/default/zramswap
 grep -q '^ALGO=zstd$' /etc/default/zramswap
 grep -q '^SIZE=8192$' /etc/default/zramswap
 grep -q '^vm.swappiness=150$' /etc/sysctl.d/99-zram.conf
-test -f /etc/udev/rules.d/60-nvme-scheduler.rules
+test -f /etc/udev/rules.d/60-ssd-scheduler.rules
 findmnt -n -o FSTYPE / | grep -qx 'btrfs'
 findmnt -n -o OPTIONS / | grep -q 'subvol=/@'
 log_info "Verificación BTRFS completada: subvolumen raíz @"

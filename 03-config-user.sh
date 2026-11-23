@@ -186,7 +186,17 @@ EOF
 
 # 6. Asociaciones de Archivos (Mimeapps)
 echo "--- 📄 Asociando aplicaciones por defecto ---"
-mkdir -p "$USER_HOME/.config"
+mkdir -p "$USER_HOME/.config" "$USER_HOME/.local/share/applications"
+cat <<'EOF' > "$USER_HOME/.local/share/applications/nano.desktop"
+[Desktop Entry]
+Name=Nano
+Comment=Editor de texto en terminal
+Exec=foot -e nano %F
+Terminal=false
+Type=Application
+MimeType=text/plain;
+NoDisplay=true
+EOF
 cat <<EOF > "$USER_HOME/.config/mimeapps.list"
 [Default Applications]
 image/jpeg=swayimg.desktop
@@ -195,7 +205,7 @@ image/gif=swayimg.desktop
 image/webp=swayimg.desktop
 application/pdf=org.pwmt.zathura.desktop
 inode/directory=thunar.desktop
-text/plain=vim.desktop
+text/plain=nano.desktop
 EOF
 
 # 7. Waybar y Scripts

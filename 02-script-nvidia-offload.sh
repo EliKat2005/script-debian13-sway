@@ -148,14 +148,16 @@ systemctl disable --now nvidia-persistenced.service 2>/dev/null || true
 
 # --- FASE 4: PARCHE SWAY ---
 
-log "6. PARCHE CRÍTICO: Habilitar Nvidia en Sway/Tuigreet"
+# Sway sigue funcionando sobre Intel; este argumento permite iniciar con el
+# driver NVIDIA propietario presente sin convertir la dGPU en la GPU principal.
+log "6. PARCHE DE COMPATIBILIDAD: Sway/Tuigreet con NVIDIA presente"
 CONFIG_GREETD="/etc/greetd/config.toml"
 
 # Verificamos si existe el archivo y si NO tiene ya el parche
 if [[ -f "$CONFIG_GREETD" ]]; then
     if grep -q "cmd sway --time" "$CONFIG_GREETD"; then
         sed -i "s/--cmd sway/--cmd 'sway --unsupported-gpu'/" "$CONFIG_GREETD"
-        log "✅ Greetd parcheado: Sway iniciará en modo --unsupported-gpu"
+        log "✅ Greetd parcheado: Sway iniciará con --unsupported-gpu"
     elif grep -q "sway --unsupported-gpu" "$CONFIG_GREETD"; then
          log "✅ Greetd ya estaba parcheado."
     else
