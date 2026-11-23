@@ -6,7 +6,7 @@ Una arquitectura de instalación y configuración sumamente robusta, moderna y p
 
 - **Wayland prioritario con compatibilidad:** Sway usa Wayland nativamente y mantiene XWayland habilitado para aplicaciones compatibles que todavía requieren X11.
 - **Navegador Brave Origin:** Instala la variante oficial `origin` mediante el instalador publicado por Brave.
-- **Gráficos Híbridos Inteligentes (Nvidia Prime Offload):** Configurado para que Sway se ejecute nativamente sobre la gráfica integrada (Intel UHD 620) maximizando la batería. La GPU dedicada (Nvidia MX130 Maxwell) se mantiene en reposo (D3cold/Offload) y solo se invoca usando el wrapper `nv` (ej. `nv blender`).
+- **Gráficos Híbridos Inteligentes (Nvidia Prime Offload):** Configurado para que Sway se ejecute nativamente sobre la gráfica integrada (Intel UHD 620) maximizando la batería. La GPU dedicada (Nvidia MX130 Maxwell) usa gestión dinámica de energía y solo se invoca usando el wrapper `nv` (ej. `nv blender`); el estado D3 real depende del soporte ACPI/firmware del Inspiron.
 - **BTRFS preparado manualmente + Timeshift:** La raíz BTRFS y el subvolumen `@` se crean durante el particionado manual de la instalación Netinstall. Los scripts no modifican particiones ni subvolúmenes.
 - **ZRAM sin swap en disco:** Instala `zram-tools`, crea un dispositivo ZSTD de 8 GB y configura prioridad 100 con `swappiness=150`.
 - **Batería protegida:** Configura carga entre 70% y 80% cuando el firmware Dell expone los controles correspondientes.
@@ -96,3 +96,9 @@ sudo reboot
 
 ### Multimedia y Laptop
 Soporte absoluto integrado para subir/bajar brillo (`brightnessctl`), control de volumen micro/altavoz (`pamixer`), teclado numérico y manejo nativo de batería en barra.
+
+### Compatibilidad y migración de APT
+
+- El script NVIDIA ejecuta `apt -y modernize-sources` cuando detecta formatos antiguos `.list`.
+- Las copias de seguridad de `debian.sources` se guardan en `/var/backups/debian-sway/`, nunca dentro de `/etc/apt/sources.list.d/`.
+- Las unidades `nvidia-suspend.service`, `nvidia-hibernate.service` y `nvidia-resume.service` se habilitan únicamente si existen en el paquete instalado.

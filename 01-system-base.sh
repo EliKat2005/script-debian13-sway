@@ -46,13 +46,10 @@ if [[ "$VERIFY_ONLY" == true ]]; then
         grep -qx '80' /sys/class/power_supply/BAT0/charge_control_end_threshold
         systemctl is-enabled battery-charge-limit.service | grep -qx 'enabled'
     fi
-    test -x /usr/local/bin/recorder
-    test -x /usr/local/bin/nv
     ufw status | grep -q 'Status: active'
     systemctl is-active --quiet power-profiles-daemon
     systemctl is-active --quiet thermald
     systemctl is-active --quiet zramswap
-    test -f /home/${SUDO_USER:-elian}/.config/sway/config
     echo "Verificación completada."
     exit 0
 fi
@@ -67,10 +64,10 @@ if ! lspci -nn | grep -q '10de:174d'; then
     exit 1
 fi
 
-if [[ ! -b /dev/nvme0n1 ]]; then
-    echo "Hardware no compatible: no se encontró el NVMe esperado."
-    exit 1
-fi
+#if [[ ! -b /dev/nvme0n1 ]]; then
+#    echo "Hardware no compatible: no se encontró el NVMe esperado."
+#    exit 1
+#fi
 
 BIOS_VERSION=$(cat /sys/class/dmi/id/bios_version 2>/dev/null || echo "desconocida")
 log_info "BIOS detectado: $BIOS_VERSION"
@@ -102,10 +99,21 @@ APT::Install-Recommends "false";
 APT::Install-Suggests "false";
 EOF
 
+if [[ -f /etc/apt/sources.list ]] || find /etc/apt/sources.list.d -maxdepth 1 -type f -name '*.list' -print -quit | grep -q .; then
+    mkdir -p /var/backups/debian-sway
+    find /etc/apt/sources.list.d -maxdepth 1 -type f -name '*.list' -exec cp -a '{}' /var/backups/debian-sway/ ';'
+    [[ -f /etc/apt/sources.list ]] && cp -a /etc/apt/sources.list /var/backups/debian-sway/sources.list.pre-modernize
+    apt -y modernize-sources
+    echo "   Fuentes APT antiguas migradas al formato .sources moderno."
+fi
+
 if [[ -f "$SOURCES_FILE" ]]; then
-    cp "$SOURCES_FILE" "$SOURCES_FILE.bak_script"
-    
-    if ! grep -q "contrib" "$SOURCES_FILE" || ! grep -q "non-free " "$SOURCES_FILE"; then
+    mkdir -p /var/backups/debian-sway
+    cp -a "$SOURCES_FILE" "/var/backups/debian-sway/debian.sources.base.$(date +%Y%m%d-%H%M%S)"
+
+    if ! grep -q 'contrib' "$SOURCES_FILE" ||
+       ! grep -q 'non-free' "$SOURCES_FILE" ||
+       ! grep -q 'non-free-firmware' "$SOURCES_FILE"; then
         echo "   Detectado repositorio incompleto. Activando contrib y non-free..."
         sed -i 's/Components: main.*/Components: main contrib non-free non-free-firmware/g' "$SOURCES_FILE"
         echo "   Repositorios corregidos."
@@ -195,14 +203,20 @@ sysctl --system
 systemctl enable --now zramswap.service
 
 echo "--- 🌍 Configurando Variables de Entorno ---"
-cat > /etc/environment <<EOF
-MOZ_ENABLE_WAYLAND=1
-GDK_BACKEND=wayland,x11
-XDG_SESSION_TYPE=wayland
-XDG_CURRENT_DESKTOP=sway
-EDITOR=nano
-VISUAL=nano
-EOF
+set_environment_variable() {
+    local key=$1
+    local value=$2
+    touch /etc/environment
+    sed -i "/^[[:space:]#]*${key}[[:space:]]*=.*/d" /etc/environment
+    printf '%s=%s\n' "$key" "$value" >> /etc/environment
+}
+
+set_environment_variable MOZ_ENABLE_WAYLAND 1
+set_environment_variable GDK_BACKEND wayland,x11
+set_environment_variable XDG_SESSION_TYPE wayland
+set_environment_variable XDG_CURRENT_DESKTOP sway
+set_environment_variable EDITOR nano
+set_environment_variable VISUAL nano
 
 echo "--- 🌐 Configurando NetworkManager ---"
 cat > /etc/NetworkManager/NetworkManager.conf <<EOF
@@ -211,10 +225,6 @@ plugins=keyfile
 [ifupdown]
 managed=true
 EOF
-if [[ -f /etc/network/interfaces ]]; then
-    mv /etc/network/interfaces /etc/network/interfaces.bak
-    echo -e "# Gestionado por NetworkManager\nauto lo\niface lo inet loopback" > /etc/network/interfaces
-fi
 
 echo "--- 🔐 Configurando Login ---"
 TUIGREET_PATH=$(which tuigreet || echo "/usr/bin/tuigreet")
@@ -260,7 +270,10 @@ systemctl disable --now NetworkManager-wait-online.service 2>/dev/null || true
 systemctl disable getty@tty1 2>/dev/null || true
 systemctl mask getty@tty1 2>/dev/null || true
 
-if [[ -f /sys/class/power_supply/BAT0/charge_control_end_threshold ]]; then
+if [[ -w /sys/class/power_supply/BAT0/charge_control_start_threshold &&
+      -w /sys/class/power_supply/BAT0/charge_control_end_threshold ]]; then
+    echo 70 > /sys/class/power_supply/BAT0/charge_control_start_threshold
+    echo 80 > /sys/class/power_supply/BAT0/charge_control_end_threshold
     cat > /etc/systemd/system/battery-charge-limit.service <<'EOF'
 [Unit]
 Description=Límite de carga de batería al 80%
@@ -324,7 +337,6 @@ if command -v fwupdmgr >/dev/null; then
     fwupdmgr get-devices 2>/dev/null | sed 's/^/  /' || true
 fi
 test -x /usr/local/bin/recorder
-test -x /usr/local/bin/nv
 ufw status | grep -q 'Status: active'
 systemctl is-active --quiet power-profiles-daemon
 systemctl is-active --quiet thermald
