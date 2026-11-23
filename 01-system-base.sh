@@ -128,7 +128,8 @@ echo "options i915 enable_fbc=1" > /etc/modprobe.d/i915.conf
 rm -f /etc/modprobe.d/pcie_aspm.conf
 echo 'ACTION=="add", SUBSYSTEM=="backlight", RUN+="/bin/chgrp video /sys/class/backlight/%k/brightness", RUN+="/bin/chmod g+w /sys/class/backlight/%k/brightness"' > /etc/udev/rules.d/90-backlight.rules
 cat > /etc/udev/rules.d/60-ssd-scheduler.rules <<'EOF'
-ACTION=="add", SUBSYSTEM=="block", KERNEL=="sd*|nvme[0-9]*n[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="none"
+ACTION=="add", SUBSYSTEM=="block", KERNEL=="sd*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="none"
+ACTION=="add", SUBSYSTEM=="block", KERNEL=="nvme[0-9]*n[0-9]*", ATTR{queue/rotational}=="0", ATTR{queue/scheduler}="none"
 EOF
 udevadm control --reload-rules
 for block_device in /sys/block/sd* /sys/block/nvme*; do
@@ -168,7 +169,7 @@ echo "--- 🌐 Instalando Brave Browser ---"
 curl -fsS https://dl.brave.com/install.sh | FLAVOR=origin sh
 
 # 8. Audio, Red y Energía
-install_pkg "AUDIO_RED" "brightnessctl pamixer playerctl btop nm-connection-editor blueman network-manager-gnome pipewire pipewire-pulse wireplumber pavucontrol libspa-0.2-bluetooth power-profiles-daemon fwupd thermald"
+install_pkg "AUDIO_RED" "brightnessctl pamixer playerctl btop nm-connection-editor blueman network-manager-gnome pipewire pipewire-pulse wireplumber pavucontrol libspa-0.2-bluetooth rtkit upower power-profiles-daemon fwupd thermald"
 
 # Retirar reglas persistentes heredadas que pueden contradecir UFW
 apt -y purge iptables-persistent netfilter-persistent 2>/dev/null || true
@@ -266,6 +267,10 @@ echo "--- 🔧 Servicios y Limpieza ---"
 systemctl enable greetd
 systemctl enable bluetooth
 systemctl enable fstrim.timer
+if command -v rfkill >/dev/null; then
+    rfkill unblock wifi
+    rfkill unblock bluetooth
+fi
 systemctl disable --now NetworkManager-wait-online.service 2>/dev/null || true
 systemctl disable getty@tty1 2>/dev/null || true
 systemctl mask getty@tty1 2>/dev/null || true

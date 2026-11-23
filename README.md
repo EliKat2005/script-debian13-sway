@@ -37,7 +37,7 @@ El proyecto está dividido en tres comandos secuenciales para garantizar un desp
 ### 2. `02-script-nvidia-offload.sh` (Gestión de GPU Híbrida)
 - **Requiere SUDO.**
 - Instala drivers propietarios y `linux-headers-amd64` vía `dkms` para actualizaciones automáticas ante cambios del kernel de Debian.
-- Habilita KMS con `nvidia-drm.modeset=1`, elimina `pci=noaer` si existiera y ajusta greetd para iniciar Sway con `--unsupported-gpu`. Sway continúa usando Intel como GPU principal; el argumento evita el fallo de inicio que puede producir el driver NVIDIA propietario presente.
+- Habilita KMS con `nvidia-drm.modeset=1`, elimina `pci=noaer` si existiera y deja greetd iniciar Sway normalmente. Sway usa Intel como GPU principal y NVIDIA solo se activa mediante offload.
 
 ### 3. `03-config-user.sh` (Interfaz y Entorno de Usuario)
 - **Ejecutar SIN SUDO (Usuario normal).**

@@ -146,23 +146,17 @@ for unit in nvidia-suspend.service nvidia-hibernate.service nvidia-resume.servic
 done
 systemctl disable --now nvidia-persistenced.service 2>/dev/null || true
 
-# --- FASE 4: PARCHE SWAY ---
+# --- FASE 4: VALIDACIÓN SWAY ---
 
-# Sway sigue funcionando sobre Intel; este argumento permite iniciar con el
-# driver NVIDIA propietario presente sin convertir la dGPU en la GPU principal.
-log "6. PARCHE DE COMPATIBILIDAD: Sway/Tuigreet con NVIDIA presente"
+# En el hardware actual Sway inicia correctamente con la Intel y se mantiene
+# NVIDIA en modo offload. Ya no se fuerza --unsupported-gpu.
+log "6. Validando configuración normal de Sway/Tuigreet"
 CONFIG_GREETD="/etc/greetd/config.toml"
-
-# Verificamos si existe el archivo y si NO tiene ya el parche
-if [[ -f "$CONFIG_GREETD" ]]; then
-    if grep -q "cmd sway --time" "$CONFIG_GREETD"; then
-        sed -i "s/--cmd sway/--cmd 'sway --unsupported-gpu'/" "$CONFIG_GREETD"
-        log "✅ Greetd parcheado: Sway iniciará con --unsupported-gpu"
-    elif grep -q "sway --unsupported-gpu" "$CONFIG_GREETD"; then
-         log "✅ Greetd ya estaba parcheado."
-    else
-         log "⚠️ No se pudo parchear Greetd automáticamente (formato desconocido)."
-    fi
+if [[ -f "$CONFIG_GREETD" ]] && grep -q "sway --unsupported-gpu" "$CONFIG_GREETD"; then
+    sed -i "s/--cmd 'sway --unsupported-gpu'/--cmd sway/g" "$CONFIG_GREETD"
+    log "✅ Se eliminó el parche --unsupported-gpu ya innecesario"
+elif [[ -f "$CONFIG_GREETD" ]] && grep -q "sway --time" "$CONFIG_GREETD"; then
+    log "✅ Greetd usa Sway sin parche de compatibilidad."
 fi
 
 # Parche cursor invisible
