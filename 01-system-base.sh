@@ -150,7 +150,7 @@ install_pkg "FIRMWARE_KERNEL" "curl build-essential pkg-config libglib2.0-bin xd
 
 # 3. Drivers Gráficos y Utilidades de Sistema
 install_pkg "DRIVERS_INTEL" "mesa-utils rfkill intel-media-va-driver intel-gpu-tools vainfo vulkan-tools"
-install_pkg "UTILIDADES_SYS" "timeshift git make wf-recorder libnotify-bin lm-sensors ufw udiskie zram-tools"
+install_pkg "UTILIDADES_SYS" "timeshift x11-xserver-utils git make wf-recorder libnotify-bin lm-sensors ufw udiskie zram-tools"
 
 # 4. Entorno Sway (Core)
 install_pkg "SWAY_CORE" "sway swaybg swayidle swaylock xwayland waybar wofi mako-notifier wlogout"
